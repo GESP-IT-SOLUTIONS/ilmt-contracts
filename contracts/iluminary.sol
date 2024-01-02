@@ -681,57 +681,7 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
     constructor() ERC20("Iluminary Token", "ILMT") {
         // vestingContract = ;
 
-        /*
 
-            Seed: 3% (8,100,000 ILMT)
-            Month 0: 15% at TGE
-            Months 4-28: 4.16% of allocation per month
-
-            Private Sales: 6% (16,200,000 ILMT total)
-            Month 0: 20% at TGE
-            Months 4-28: 4.16 % of allocation per month
-
-            Public Sales: 6% (16,200,000 ILMT)
-            Month 0: 100% at TGE
-
-            Liquidity & Exchange Listings: 20% (54,000,000 ILMT)
-
-            Community Funds: 41% (110,700,000 ILMT)
-            I. NFT Staking Rewards and Incentives (60%): 66,420,000 ILMT
-            This percentage of the community fund is set aside for staking pools, as follows:
-            • 25% of 66,420,000 ILMT is 16,605,000 ILMT, Allocated for token staking
-            pools
-            • 75% of 66,420,000 ILMT is 49,815,000 ILMT, Allocated for Digital Assets
-            staking pool
-            - 33% of the Digital Asset staking allocation is to be distributed to the
-            Digital Asset holders in the first six months.
-            - 33% of the Digital Asset staking allocation, which is 49,815,000 ILMT,
-            amounts to: 49,815,000 × 0.33 = 16,458,950 ILMT
-            II. Gamification and Community Engagement (10%): 11,070,000 ILMT
-            III. Ecosystem Development and Partnerships (10%): 11,070,000 ILMT
-            IV. Liquidity Mining and Rewards (10%): 11,070,000 ILMT
-            V. Airdrops and Promotions (5%): 5,535,000 ILMT
-            VI. Reserve Fund (2.5%): 2,767,500 ILMT
-            VII. Treasury and Future Development (2.5%): 2,767,500 ILMT
-
-            Team: 12% (32,400,000 ILMT)
-            Month 0: 0% at TGE (0 ILMT)
-            Month 12: 3% of allocation
-            Months 13-37: 4.16% of allocation per month
-
-            Advisors: 2% (5,400,000 ILMT)
-            Month 0: 0% at TGE (0 ILMT)
-            Month 12: 3% of allocation
-            Months 13-37: 4.16% of allocation per month
-
-            Marketing: 5%: 13,500,000 ILMT
-            Month 0: 10% at TGE
-            Months 4-28: 4.16% of allocation per month
-
-            R&D: 5%: 13,500,000 ILMT
-            Month 0: 10% at TGE
-            Months 4-28: 4.16 % of allocation per month 
-        */
 
         /*
 
