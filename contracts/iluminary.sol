@@ -678,10 +678,8 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
 
     address public vestingContract;
 
-    constructor() ERC20("Iluminary Token", "ILMT") {
-        // vestingContract = ;
-
-
+    constructor(address vestingContract_) ERC20("Iluminary Token", "ILMT") {
+        vestingContract = vestingContract_;
 
         /*
 
