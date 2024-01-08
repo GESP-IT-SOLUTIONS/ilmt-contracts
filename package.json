@@ -1,3 +1,30 @@
 {
-  "name": "hardhat-project"
+  "name": "tsicont",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "deploy-vesting": "npx hardhat run scripts/1_deploy_vesting.ts --network localhost",
+    "deploy-token": "npx hardhat run scripts/2_deploy_token.ts --network localhost",
+    "compile": "hardhat compile"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "hardhat": "^2.17.2",
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-waffle": "^2.0.6",
+    "@openzeppelin/contracts": "^4.9.3",
+    "chai": "^4.3.8",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "ethereum-waffle": "^4.0.10",
+    "ethers": "^5.7.2",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.3.10"
+  }
 }
