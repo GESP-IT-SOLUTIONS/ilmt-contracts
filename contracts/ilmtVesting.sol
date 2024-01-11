@@ -101,8 +101,6 @@ interface IERC20Metadata is IERC20 {
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
-pragma solidity ^0.8.0;
-
 /**
  * @dev Provides information about the current execution context, including the
  * sender of the transaction and its data. While these are generally available
@@ -124,8 +122,6 @@ abstract contract Context {
 }
 
 // OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
-
-pragma solidity ^0.8.0;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -219,60 +215,6 @@ contract ILMTVesting is Ownable {
 
     constructor() {
 
-        // tokenContract = ;
-
-        /*
-
-            Seed: 3% (8,100,000 ILMT)
-            Month 0: 15% at TGE
-            Months 4-28: 4.16% of allocation per month
-
-            Private Sales: 6% (16,200,000 ILMT total)
-            Month 0: 20% at TGE
-            Months 4-28: 4.16 % of allocation per month
-
-            Public Sales: 6% (16,200,000 ILMT)
-            Month 0: 100% at TGE
-
-            Liquidity & Exchange Listings: 20% (54,000,000 ILMT)
-
-            Community Funds: 41% (110,700,000 ILMT)
-            I. NFT Staking Rewards and Incentives (60%): 66,420,000 ILMT
-            This percentage of the community fund is set aside for staking pools, as follows:
-            • 25% of 66,420,000 ILMT is 16,605,000 ILMT, Allocated for token staking
-            pools
-            • 75% of 66,420,000 ILMT is 49,815,000 ILMT, Allocated for Digital Assets
-            staking pool
-            - 33% of the Digital Asset staking allocation is to be distributed to the
-            Digital Asset holders in the first six months.
-            - 33% of the Digital Asset staking allocation, which is 49,815,000 ILMT,
-            amounts to: 49,815,000 × 0.33 = 16,458,950 ILMT
-            II. Gamification and Community Engagement (10%): 11,070,000 ILMT
-            III. Ecosystem Development and Partnerships (10%): 11,070,000 ILMT
-            IV. Liquidity Mining and Rewards (10%): 11,070,000 ILMT
-            V. Airdrops and Promotions (5%): 5,535,000 ILMT
-            VI. Reserve Fund (2.5%): 2,767,500 ILMT
-            VII. Treasury and Future Development (2.5%): 2,767,500 ILMT
-
-            Team: 12% (32,400,000 ILMT)
-            Month 0: 0% at TGE (0 ILMT)
-            Month 12: 3.04% of allocation
-            Months 13-37: 4.04% of allocation per month
-
-            Advisors: 2% (5,400,000 ILMT)
-            Month 0: 0% at TGE (0 ILMT)
-            Month 12: 3.04% of allocation
-            Months 13-37: 4.04% of allocation per month
-
-            Marketing: 5%: 13,500,000 ILMT
-            Month 0: 10% at TGE
-            Months 4-28: 3.75% of allocation per month
-
-            R&D: 5%: 13,500,000 ILMT
-            Month 0: 10% at TGE
-            Months 4-28: 3.75 % of allocation per month 
-        */
-
         /*
 
         Minting the amount released at TGE to the respective wallets and minting the vested amount to the vesting contract
@@ -345,14 +287,14 @@ contract ILMTVesting is Ownable {
         require(availableTokens > 0, "No tokens available to claim!");
 
         vestingSchedules[claimer].lastCliffClaimed = lastCliff;
-        IERC20(tokenContract).transferFrom(address(this), claimer, availableTokens);     
+        require(IERC20(tokenContract).transfer(claimer, availableTokens), "Unsuccessful Transfer!");     
 
     }
 
     /// ADMIN
 
     function setTokenContract(address newContract) external onlyOwner {
-        require(tokenContract != address(0), "Invalid Address!");
+        require(newContract != address(0), "Invalid Address!");
         tokenContract = newContract;
     }
 
@@ -368,19 +310,7 @@ contract ILMTVesting is Ownable {
         require(amount > 0, "Invalid Amount!");
         require(token != address(0), "Invalid Token!");
 
-        IERC20(token).transferFrom(address(this), recipient, amount);
-    }
-
-    /// UTIL
-
-    function getSum(uint256[] memory arr) public pure returns(uint256)
-    {
-    uint i;
-    uint256 sum = 0;
-        
-    for(i = 0; i < arr.length; i++)
-        sum = sum + arr[i];
-    return sum;
+        require(IERC20(token).transfer(recipient, amount), "Unsuccessful Transfer!");
     }
 
 }

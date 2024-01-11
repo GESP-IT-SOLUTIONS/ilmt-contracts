@@ -101,7 +101,6 @@ interface IERC20Metadata is IERC20 {
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
-pragma solidity ^0.8.0;
 
 /**
  * @dev Provides information about the current execution context, including the
@@ -124,8 +123,6 @@ abstract contract Context {
 }
 
 // OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
-
-pragma solidity ^0.8.0;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -672,13 +669,14 @@ abstract contract Pausable is Context {
 
 contract IluminaryToken is ERC20, Ownable, Pausable {
 
-    uint256 public maxSupply = 270000000 * 10 ** 18;
+    uint256 public constant maxSupply = 270000000 * 10 ** 18;
 
     mapping (address => bool) public  _isBlacklisted;
 
     address public vestingContract;
 
     constructor(address vestingContract_) ERC20("Iluminary Token", "ILMT") {
+        require(vestingContract_ != address(0) ,  "Invalid Address!");
         vestingContract = vestingContract_;
 
         /*
@@ -769,7 +767,7 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
     }
 
     function setVestingContract(address newContract) external onlyOwner {
-        require(vestingContract != address(0), "Invalid Address!");
+        require(newContract != address(0), "Invalid Address!");
         vestingContract = newContract;
     }
 
@@ -778,6 +776,14 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
 
         (bool sent, ) = recipient.call{value: amount}("");
         require(sent, "Failed to send Ether");
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
 }
