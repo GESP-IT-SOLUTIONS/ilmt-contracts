@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 /// @title $ILMT Vesting
-/// @author André Costa @ MyWeb3Startup.com
 
 /**
  * @dev Interface of the ERC-20 standard as defined in the ERC.
@@ -200,20 +199,32 @@ abstract contract Ownable is Context {
     }
 }
 
-
+/**
+ * @title ILMTVesting
+ * @dev This contract manages the vesting of $ILMT tokens for designated beneficiaries. It supports multiple vesting schedules for various stakeholders, including team members, advisors, and marketing and R&D personnel.
+ * The contract allows the distribution of tokens over specified cliffs, ensuring that tokens are released over time rather than all at once.
+ */
 contract ILMTVesting is Ownable {
 
+    // Defines a vesting schedule for a beneficiary
     struct VestingSchedule {
-        uint256[] tokensPerCliff;
-        uint256[] cliffs;
-        uint lastCliffClaimed;
+        uint256[] tokensPerCliff; // Amount of tokens to release at each cliff
+        uint256[] cliffs; // Timestamps when each token release (cliff) occurs
+        uint lastCliffClaimed; // The index of the last cliff that was claimed
     }
 
+    // Maps a beneficiary's address to their vesting schedule
     mapping(address => VestingSchedule) private vestingSchedules;
 
+    // The contract address of the $ILMT token
     address public tokenContract;
 
+    /**
+     * @dev Constructor that initializes the contract. It can optionally set up initial vesting schedules.
+     */
     constructor() {
+
+        // tokenContract = ;
 
         /*
 
@@ -242,12 +253,21 @@ contract ILMTVesting is Ownable {
         vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [block.timestamp + 120 days, block.timestamp + 150 days, block.timestamp + 180 days, block.timestamp + 270 days, block.timestamp + 300 days, block.timestamp + 330 days, block.timestamp + 365 days, block.timestamp + 395 days, block.timestamp + 425 days, block.timestamp + 455 days, block.timestamp + 485 days, block.timestamp + 515 days, block.timestamp + 545 days, block.timestamp + 575 days, block.timestamp + 605 days, block.timestamp + 635 days, block.timestamp + 665 days, block.timestamp + 695 days, block.timestamp + 725 days, block.timestamp + 755 days, block.timestamp + 785 days, block.timestamp + 815 days, block.timestamp + 845 days, block.timestamp + 875 days];
     }
 
-    //VESTING
-
+    /**
+     * @notice Retrieves the vesting schedule for a beneficiary.
+     * @param beneficiary The address of the beneficiary whose vesting schedule is being queried.
+     * @return The vesting schedule of the specified beneficiary.
+     */
     function getVestingSchedule(address beneficiary) external view returns(VestingSchedule memory) {
         return vestingSchedules[beneficiary];
     }
 
+    /**
+     * @notice Adds or updates a vesting schedule for multiple beneficiaries. Only callable by the contract owner.
+     * @param receivers An array of addresses for the beneficiaries.
+     * @param tokens An array of token amounts to be released per cliff.
+     * @param cliffs An array of timestamps for each cliff.
+     */
     function addVestingSchedule(address[] memory receivers, uint256[] memory tokens, uint256[] memory cliffs) external onlyOwner {
         require(tokens.length == cliffs.length, "Array sizes do not match!");
 
@@ -257,59 +277,88 @@ contract ILMTVesting is Ownable {
             vestingSchedules[receivers[i]].tokensPerCliff = tokens;
             vestingSchedules[receivers[i]].cliffs = cliffs;
         }
-        
     }
 
+    /**
+     * @notice Calculates the total amount of vested tokens available for a beneficiary to claim.
+     * @param beneficiary The address of the beneficiary.
+     * @return The total amount of tokens that the beneficiary can currently claim.
+     */
     function vestedTokensAvailable(address beneficiary) external view returns(uint256) {
         (uint256 availableTokens, ) = vestedTokensAvailable_(beneficiary);
         return availableTokens;
     }
 
+    /**
+     * @dev Internal function to calculate vested tokens and the last cliff reached. Used by `vestedTokensAvailable` and `claimVestedTokens`.
+     * @param beneficiary The address of the beneficiary.
+     * @return availableTokens The total amount of vested tokens available for claim.
+     * @return lastCliff The index of the last cliff reached.
+     */
     function vestedTokensAvailable_(address beneficiary) internal view returns(uint256, uint) {
         VestingSchedule memory vestingSchedule_ = vestingSchedules[beneficiary];
-        uint256 availableTokens;
+        uint256 availableTokens = 0;
         uint lastCliff = vestingSchedule_.cliffs.length;
         for (uint i = vestingSchedule_.lastCliffClaimed; i < lastCliff; i++) {
             if (block.timestamp >= vestingSchedule_.cliffs[i]) {
                 availableTokens += vestingSchedule_.tokensPerCliff[i];
-            }
+            } 
             else {
                 lastCliff = i;
+                if (lastCliff > 0) {
+                    availableTokens += (((vestingSchedule_.cliffs[i] - block.timestamp) / 1 days) * vestingSchedule_.tokensPerCliff[i]) / ((vestingSchedule_.cliffs[i] - vestingSchedule_.cliffs[i - 1]) / 1 days);
+                }
                 break;
             }
         }
-
         return (availableTokens, lastCliff);
     }
 
-    function claimVestedTokens(address claimer) external {     
+    /**
+     * @notice Allows a beneficiary to claim their vested tokens.
+     * @dev Transfers the available vested tokens to the beneficiary. Updates the last cliff claimed to prevent double claiming.
+     * @param claimer The address of the beneficiary claiming their tokens.
+     */
+    function claimVestedTokens(address claimer) external {
         (uint256 availableTokens, uint lastCliff) = vestedTokensAvailable_(claimer);
         require(availableTokens > 0, "No tokens available to claim!");
 
         vestingSchedules[claimer].lastCliffClaimed = lastCliff;
-        require(IERC20(tokenContract).transfer(claimer, availableTokens), "Unsuccessful Transfer!");     
-
+        require(IERC20(tokenContract).transfer(claimer, availableTokens), "Unsuccessful Transfer!");
     }
 
-    /// ADMIN
+    /// Administrative functions
 
+    /**
+     * @notice Sets the contract address for the $ILMT token. Only callable by the contract owner.
+     * @param newContract The new contract address for the $ILMT token.
+     */
     function setTokenContract(address newContract) external onlyOwner {
         require(newContract != address(0), "Invalid Address!");
         tokenContract = newContract;
     }
 
+    /**
+     * @notice Allows the owner to withdraw Ether from the contract. Only callable by the contract owner.
+     * @param recipient The address to receive the Ether.
+     * @param amount The amount of Ether to withdraw.
+     */
     function withdraw(address recipient, uint256 amount) external onlyOwner {
         require(recipient != address(0), "Invalid Address!");
-
         (bool sent, ) = recipient.call{value: amount}("");
         require(sent, "Failed to send Ether");
     }
 
+    /**
+     * @notice Allows the owner to withdraw tokens from the contract. Only callable by the contract owner.
+     * @param recipient The address to receive the tokens.
+     * @param amount The amount of tokens to withdraw.
+     * @param token The contract address of the token to withdraw.
+     */
     function withdraw(address recipient, uint256 amount, address token) external onlyOwner {
         require(recipient != address(0), "Invalid Address!");
         require(amount > 0, "Invalid Amount!");
         require(token != address(0), "Invalid Token!");
-
         require(IERC20(token).transfer(recipient, amount), "Unsuccessful Transfer!");
     }
 

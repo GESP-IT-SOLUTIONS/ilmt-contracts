@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 /// @title $ILMT
-/// @author André Costa @ MyWeb3Startup.com
 
 /**
  * @dev Interface of the ERC-20 standard as defined in the ERC.
@@ -667,25 +666,37 @@ abstract contract Pausable is Context {
     }
 }
 
+/**
+ * @title IluminaryToken
+ * @dev Extends ERC20 token standard with functionalities for minting, burning,
+ * pausing the token transfer, and managing token vesting.
+ *
+ * The contract includes:
+ *  - A maximum supply cap.
+ *  - Functions to mint and burn tokens.
+ *  - Pausable transfers to enhance security.
+ *  - Ownership management.
+ *  - A vesting mechanism for team members, advisors, etc.
+ *
+ * The initial token distribution is specified within the constructor.
+ */
 contract IluminaryToken is ERC20, Ownable, Pausable {
-
     uint256 public constant maxSupply = 270000000 * 10 ** 18;
 
-    mapping (address => bool) public  _isBlacklisted;
+    mapping(address => bool) public minters;
+    mapping(address => bool) public burners;
 
     address public vestingContract;
 
+    /**
+     * @dev Sets the values for {name} and {symbol}, initializes vesting contract address,
+     * and performs the initial token minting for distribution.
+     *
+     * @param vestingContract_ Address of the vesting contract for team and advisors' tokens.
+     */
     constructor(address vestingContract_) ERC20("Iluminary Token", "ILMT") {
-        require(vestingContract_ != address(0) ,  "Invalid Address!");
+        require(vestingContract_ != address(0), "Invalid Address!");
         vestingContract = vestingContract_;
-
-        /*
-
-        Minting the amount released at TGE to the respective wallets and minting the vested amount to the vesting contract
-
-        Some phases like SEED & PRIVATE will be distributed between various addresses, so we establish no vesting schedule initially and allow the owner to set further down the line
-
-        */
 
         //CHANGE ADDRESSES
 
@@ -721,69 +732,111 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
         _mint(vestingContract, 12150000 * 10 ** 18);
     }
 
-    /// PAUSABLE
+    /**
+     * @dev Modifier to make a function callable only by addresses marked as minters.
+     */
+    modifier onlyMinter() {
+        require(minters[msg.sender], "Caller is not a minter");
+        _;
+    }
 
+    /**
+     * @dev Modifier to make a function callable only by addresses marked as burners.
+     */
+    modifier onlyBurner() {
+        require(burners[msg.sender], "Caller is not a burner");
+        _;
+    }
+
+    /**
+     * @dev Overridden function to transfer tokens when not paused.
+     */
     function _transfer(
         address from,
         address to,
         uint256 amount
-    ) internal virtual override whenNotPaused {
-        require(!_isBlacklisted[from] && !_isBlacklisted[to], "To Or From Address Is Blacklisted!");    
+    ) internal virtual override whenNotPaused { 
         super._transfer(from, to, amount);
-  
     }
 
-    /// BURN
-    
     /**
-     * @dev Destroys `amount` tokens from the caller.
-     *
-     * See {ERC20-_burn}.
+     * @dev Burns a specific amount of tokens from the caller.
+     * @param amount Amount of tokens to be burned.
      */
-    function burn(uint256 amount) public virtual {
+    function burn(uint256 amount) public virtual onlyBurner {
         _burn(_msgSender(), amount);
     }
 
     /**
-     * @dev Destroys `amount` tokens from `account`, deducting from the caller's
-     * allowance.
-     *
-     * See {ERC20-_burn} and {ERC20-allowance}.
-     *
-     * Requirements:
-     *
-     * - the caller must have allowance for ``accounts``'s tokens of at least
-     * `amount`.
+     * @dev Burns a specific amount of tokens from `account`, deducting from the caller's allowance.
+     * @param account The account from which tokens will be burned.
+     * @param amount Amount of tokens to be burned.
      */
-    function burnFrom(address account, uint256 amount) public virtual {
+    function burnFrom(address account, uint256 amount) public virtual onlyBurner {
         _spendAllowance(account, _msgSender(), amount);
         _burn(account, amount);
     }
 
-    /// ADMIN
-
-    function setBlacklist(address account, bool value) external onlyOwner {
-        _isBlacklisted[account] = value;
+    /**
+     * @dev Mints tokens to a specified account, ensuring the total supply does not exceed the maximum.
+     * @param account The account to which tokens will be minted.
+     * @param amount The amount of tokens to mint.
+     */
+    function mint(address account, uint256 amount) external onlyMinter {
+        require(account != address(0), "Invalid Address!");
+        require(totalSupply() + amount <= maxSupply, "Exceeds Max Supply!");
+        _mint(account, amount);
     }
 
-    function setVestingContract(address newContract) external onlyOwner {
-        require(newContract != address(0), "Invalid Address!");
-        vestingContract = newContract;
+    /**
+     * @dev Sets or unsets an address as a minter.
+     * @param _address Address to modify minter status.
+     * @param _status True to set as a minter, false to unset.
+     */
+    function setMinter(address _address, bool _status) public onlyOwner {
+        minters[_address] = _status;
     }
 
+    /**
+     * @dev Sets or unsets an address as a burner.
+     * @param _address Address to modify burner status.
+     * @param _status True to set as a burner, false to unset.
+     */
+    function setBurner(address _address, bool _status) public onlyOwner {
+        burners[_address] = _status;
+    }
+
+    /**
+     * @dev Allows the owner to withdraw Ether from the contract.
+     * @param recipient Address to receive the Ether.
+     * @param amount Amount of Ether to withdraw.
+     */
     function withdraw(address recipient, uint256 amount) external onlyOwner {
         require(recipient != address(0), "Invalid Address!");
-
         (bool sent, ) = recipient.call{value: amount}("");
         require(sent, "Failed to send Ether");
     }
 
+    /**
+     * @dev Pauses all token transfers.
+     */
     function pause() external onlyOwner {
         _pause();
     }
 
+    /**
+     * @dev Unpauses all token transfers.
+     */
     function unpause() external onlyOwner {
         _unpause();
     }
 
+    /**
+     * @dev Sets a new vesting contract address.
+     * @param newContract The address of the new vesting contract.
+     */
+    function setVestingContract(address newContract) external onlyOwner {
+        require(newContract != address(0), "Invalid Address!");
+        vestingContract = newContract;
+    }
 }
