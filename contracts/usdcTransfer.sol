@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
@@ -247,11 +247,12 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(linkToken) means fees are paid in LINK
+        uint256 feeAmount = (_amount * feePercentage) / 10000;
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
             _receiver,
             _receiverWallet,
             _token,
-            _amount,
+            _amount - feeAmount,
             address(s_linkToken)
         );
 
@@ -268,7 +269,6 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
         s_linkToken.approve(address(router), fees);
 
         // transfer the users funds from their wallet into the smart contract and the fee into the treasury wallet 
-        uint256 feeAmount = (_amount * feePercentage) / 10000;
         IERC20(_token).transferFrom(msg.sender, address(this), _amount - feeAmount);
         IERC20(_token).transferFrom(msg.sender, treasuryWallet, feeAmount);
 
@@ -317,11 +317,12 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(0) means fees are paid in native gas
+        uint256 feeAmount = (_amount * feePercentage) / 10000;
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
             _receiver,
             _receiverWallet,
             _token,
-            _amount,
+            _amount - feeAmount,
             address(0)
         );
 
@@ -335,7 +336,6 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
             revert NotEnoughBalance(address(this).balance, fees);
 
         // transfer the users funds from their wallet into the smart contract and the fee into the treasury wallet 
-        uint256 feeAmount = (_amount * feePercentage) / 10000;
         IERC20(_token).transferFrom(msg.sender, address(this), _amount - feeAmount);
         IERC20(_token).transferFrom(msg.sender, treasuryWallet, feeAmount);
 
