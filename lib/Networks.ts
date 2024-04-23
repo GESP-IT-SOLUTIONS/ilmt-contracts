@@ -1,11 +1,11 @@
 export default interface NetworkConfigInterface {
-  chainId: number;
-  symbol: string;
+  chainId: number
+  symbol: string
   blockExplorer: {
-    name: string;
-    generateContractUrl: (contractAddress: string) => string;
-    generateTransactionUrl: (transactionAddress: string) => string;
-  };
+    name: string
+    generateContractUrl: (contractAddress: string) => string
+    generateTransactionUrl: (transactionAddress: string) => string
+  }
 }
 
 /*
@@ -19,7 +19,7 @@ export const hardhatLocal: NetworkConfigInterface = {
     generateContractUrl: (contractAddress: string) => `#`,
     generateTransactionUrl: (transactionAddress: string) => `#`,
   },
-};
+}
 
 export const bscTestnet: NetworkConfigInterface = {
   chainId: 97,
@@ -31,7 +31,7 @@ export const bscTestnet: NetworkConfigInterface = {
     generateTransactionUrl: (transactionAddress: string) =>
       `https://testnet.bscscan.com/tx/${transactionAddress}`,
   },
-};
+}
 
 export const bscMainnet: NetworkConfigInterface = {
   chainId: 56,
@@ -43,10 +43,10 @@ export const bscMainnet: NetworkConfigInterface = {
     generateTransactionUrl: (transactionAddress: string) =>
       `https://bscscan.com/tx/${transactionAddress}`,
   },
-};
+}
 
 export const Networks = {
   mainnet: bscMainnet,
   testnet: bscTestnet,
   local: hardhatLocal,
-};
+}

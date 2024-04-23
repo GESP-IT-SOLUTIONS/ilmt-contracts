@@ -5,86 +5,13 @@ import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/
 import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
-interface IERC20 {
-  /**
-   * @dev Emitted when `value` tokens are moved from one account (`from`) to
-   * another (`to`).
-   *
-   * Note that `value` may be zero.
-   */
-  event Transfer(address indexed from, address indexed to, uint256 value);
-
-  /**
-   * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-   * a call to {approve}. `value` is the new allowance.
-   */
-  event Approval(address indexed owner, address indexed spender, uint256 value);
-
-  /**
-   * @dev Returns the amount of tokens in existence.
-   */
-  function totalSupply() external view returns (uint256);
-
-  /**
-   * @dev Returns the amount of tokens owned by `account`.
-   */
-  function balanceOf(address account) external view returns (uint256);
-
-  /**
-   * @dev Moves `amount` tokens from the caller's account to `to`.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transfer(address to, uint256 amount) external returns (bool);
-
-  /**
-   * @dev Returns the remaining number of tokens that `spender` will be
-   * allowed to spend on behalf of `owner` through {transferFrom}. This is
-   * zero by default.
-   *
-   * This value changes when {approve} or {transferFrom} are called.
-   */
-  function allowance(address owner, address spender) external view returns (uint256);
-
-  /**
-   * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * IMPORTANT: Beware that changing an allowance with this method brings the risk
-   * that someone may use both the old and the new allowance by unfortunate
-   * transaction ordering. One possible solution to mitigate this race
-   * condition is to first reduce the spender's allowance to 0 and set the
-   * desired value afterwards:
-   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-   *
-   * Emits an {Approval} event.
-   */
-  function approve(address spender, uint256 amount) external returns (bool);
-
-  /**
-   * @dev Moves `amount` tokens from `from` to `to` using the
-   * allowance mechanism. `amount` is then deducted from the caller's
-   * allowance.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transferFrom(address from, address to, uint256 amount) external returns (bool);
-}
-
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title - A simple messenger contract for transferring/receiving tokens and data across chains.
 contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
+    using SafeERC20 for IERC20;
+
     // Custom errors to provide more descriptive revert messages.
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); // Used to make sure contract has enough balance to cover the fees.
     error NothingToWithdraw(); // Used when trying to withdraw Ether but there's nothing to withdraw.
@@ -93,6 +20,9 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
     error SourceChainNotAllowed(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
     error SenderNotAllowed(address sender); // Used when the sender has not been allowlisted by the contract owner.
     error InvalidReceiverAddress(); // Used when the receiver address is 0.
+
+    event SetTreasuryWallet(address oldWallet, address newWallet);
+    event SetFeePercentage(uint256 oldFeePercentage, uint256 newFeePercentage);
 
     // Event emitted when a message is sent to another chain.
     event MessageSent(
@@ -178,46 +108,63 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
 
     /// @dev Updates the allowlist status of a destination chain for transactions.
     /// @notice This function can only be called by the owner.
-    /// @param _destinationChainSelector The selector of the destination chain to be updated.
+    /// @param destinationChainSelector The selector of the destination chain to be updated.
     /// @param allowed The allowlist status to be set for the destination chain.
     function allowlistDestinationChain(
-        uint64 _destinationChainSelector,
+        uint64 destinationChainSelector,
         bool allowed
     ) external onlyOwner {
-        allowlistedDestinationChains[_destinationChainSelector] = allowed;
+        allowlistedDestinationChains[destinationChainSelector] = allowed;
     }
 
     /// @dev Updates the allowlist status of a source chain
     /// @notice This function can only be called by the owner.
-    /// @param _sourceChainSelector The selector of the source chain to be updated.
+    /// @param sourceChainSelector The selector of the source chain to be updated.
     /// @param allowed The allowlist status to be set for the source chain.
     function allowlistSourceChain(
-        uint64 _sourceChainSelector,
+        uint64 sourceChainSelector,
         bool allowed
     ) external onlyOwner {
-        allowlistedSourceChains[_sourceChainSelector] = allowed;
+        allowlistedSourceChains[sourceChainSelector] = allowed;
     }
 
     /// @dev Updates the allowlist status of a sender for transactions.
     /// @notice This function can only be called by the owner.
-    /// @param _sender The address of the sender to be updated.
+    /// @param sender The address of the sender to be updated.
     /// @param allowed The allowlist status to be set for the sender.
-    function allowlistSender(address _sender, bool allowed) external onlyOwner {
-        allowlistedSenders[_sender] = allowed;
+    function allowlistSender(address sender, bool allowed) external onlyOwner {
+        allowlistedSenders[sender] = allowed;
     }
 
     // Setter function to update the treasuryWallet address
     // Only the owner of the contract can call this function
-    function setTreasuryWallet(address _newTreasuryWallet) external onlyOwner {
-        require(_newTreasuryWallet != address(0), "New treasury wallet address cannot be the zero address.");
-        treasuryWallet = _newTreasuryWallet;
+    function setTreasuryWallet(address newTreasuryWallet) external onlyOwner {
+        require(
+            newTreasuryWallet != address(0),
+            "New treasury wallet address cannot be the zero address."
+        );
+        require(
+            newTreasuryWallet != treasuryWallet,
+            "Invalid treasury wallet address"
+        );
+        address oldTreasuryWallet = treasuryWallet;
+        treasuryWallet = newTreasuryWallet;
+
+        emit SetTreasuryWallet(oldTreasuryWallet, newTreasuryWallet);
     }
 
     // Setter function to update the feePercentage
     // Only the owner of the contract can call this function
-    function setFeePercentage(uint256 _newFeePercentage) external onlyOwner {
-        require(_newFeePercentage <= 10000, "Fee percentage cannot exceed 100%.");
-        feePercentage = _newFeePercentage;
+    function setFeePercentage(uint256 newFeePercentage) external onlyOwner {
+        require(
+            newFeePercentage <= 10000,
+            "Fee percentage cannot exceed 100%."
+        );
+        require(newFeePercentage != feePercentage, "Invalid fee percentage");
+        uint256 oldFeePercentage = feePercentage;
+        feePercentage = newFeePercentage;
+
+        emit SetFeePercentage(oldFeePercentage, newFeePercentage);
     }
 
     ///
@@ -227,32 +174,32 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
     /// @notice Sends data and transfer tokens to receiver on the destination chain.
     /// @notice Pay for fees in LINK.
     /// @dev Assumes your contract has sufficient LINK to pay for CCIP fees.
-    /// @param _destinationChainSelector The identifier (aka selector) for the destination blockchain.
-    /// @param _receiver The address of the recipient on the destination blockchain.
-    /// @param _receiverWallet The address that will receive the tokens on the destination blockchain.
-    /// @param _token token address.
-    /// @param _amount token amount.
+    /// @param destinationChainSelector The identifier (aka selector) for the destination blockchain.
+    /// @param receiver The address of the recipient on the destination blockchain.
+    /// @param receiverWallet The address that will receive the tokens on the destination blockchain.
+    /// @param token token address.
+    /// @param amount token amount.
     /// @return messageId The ID of the CCIP message that was sent.
     function sendMessagePayLINK(
-        uint64 _destinationChainSelector,
-        address _receiver,
-        address _receiverWallet,
-        address _token,
-        uint256 _amount
+        uint64 destinationChainSelector,
+        address receiver,
+        address receiverWallet,
+        address token,
+        uint256 amount
     )
         external
-        onlyAllowlistedDestinationChain(_destinationChainSelector)
-        validateReceiver(_receiver)
+        onlyAllowlistedDestinationChain(destinationChainSelector)
+        validateReceiver(receiver)
         returns (bytes32 messageId)
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(linkToken) means fees are paid in LINK
-        uint256 feeAmount = (_amount * feePercentage) / 10000;
+        uint256 feeAmount = (amount * feePercentage) / 10000;
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
-            _receiver,
-            _receiverWallet,
-            _token,
-            _amount - feeAmount,
+            receiver,
+            receiverWallet,
+            token,
+            amount - feeAmount,
             address(s_linkToken)
         );
 
@@ -260,7 +207,7 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
         IRouterClient router = IRouterClient(this.getRouter());
 
         // Get the fee required to send the CCIP message
-        uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
+        uint256 fees = router.getFee(destinationChainSelector, evm2AnyMessage);
 
         if (fees > s_linkToken.balanceOf(address(this)))
             revert NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
@@ -268,24 +215,28 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
         // approve the Router to transfer LINK tokens on contract's behalf. It will spend the fees in LINK
         s_linkToken.approve(address(router), fees);
 
-        // transfer the users funds from their wallet into the smart contract and the fee into the treasury wallet 
-        IERC20(_token).transferFrom(msg.sender, address(this), _amount - feeAmount);
-        IERC20(_token).transferFrom(msg.sender, treasuryWallet, feeAmount);
+        // transfer the users funds from their wallet into the smart contract and the fee into the treasury wallet
+        IERC20(token).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amount - feeAmount
+        );
+        IERC20(token).safeTransferFrom(msg.sender, treasuryWallet, feeAmount);
 
         // approve the Router to spend tokens on contract's behalf. It will spend the amount of the given token
-        IERC20(_token).approve(address(router), _amount - feeAmount);
+        IERC20(token).safeApprove(address(router), amount - feeAmount);
 
         // Send the message through the router and store the returned message ID
-        messageId = router.ccipSend(_destinationChainSelector, evm2AnyMessage);
+        messageId = router.ccipSend(destinationChainSelector, evm2AnyMessage);
 
         // Emit an event with message details
         emit MessageSent(
             messageId,
-            _destinationChainSelector,
-            _receiver,
-            _receiverWallet,
-            _token,
-            _amount,
+            destinationChainSelector,
+            receiver,
+            receiverWallet,
+            token,
+            amount,
             address(s_linkToken),
             fees
         );
@@ -297,32 +248,32 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
     /// @notice Sends data and transfer tokens to receiver on the destination chain.
     /// @notice Pay for fees in native gas.
     /// @dev Assumes your contract has sufficient native gas like ETH on Ethereum or MATIC on Polygon.
-    /// @param _destinationChainSelector The identifier (aka selector) for the destination blockchain.
-    /// @param _receiver The address of the recipient on the destination blockchain.
-    /// @param _receiverWallet The address that will receive the tokens on the destination blockchain.
-    /// @param _token token address.
-    /// @param _amount token amount.
+    /// @param destinationChainSelector The identifier (aka selector) for the destination blockchain.
+    /// @param receiver The address of the recipient on the destination blockchain.
+    /// @param receiverWallet The address that will receive the tokens on the destination blockchain.
+    /// @param token token address.
+    /// @param amount token amount.
     /// @return messageId The ID of the CCIP message that was sent.
     function sendMessagePayNative(
-        uint64 _destinationChainSelector,
-        address _receiver,
-        address _receiverWallet,
-        address _token,
-        uint256 _amount
+        uint64 destinationChainSelector,
+        address receiver,
+        address receiverWallet,
+        address token,
+        uint256 amount
     )
         external
-        onlyAllowlistedDestinationChain(_destinationChainSelector)
-        validateReceiver(_receiver)
+        onlyAllowlistedDestinationChain(destinationChainSelector)
+        validateReceiver(receiver)
         returns (bytes32 messageId)
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(0) means fees are paid in native gas
-        uint256 feeAmount = (_amount * feePercentage) / 10000;
+        uint256 feeAmount = (amount * feePercentage) / 10000;
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
-            _receiver,
-            _receiverWallet,
-            _token,
-            _amount - feeAmount,
+            receiver,
+            receiverWallet,
+            token,
+            amount - feeAmount,
             address(0)
         );
 
@@ -330,32 +281,36 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
         IRouterClient router = IRouterClient(this.getRouter());
 
         // Get the fee required to send the CCIP message
-        uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
+        uint256 fees = router.getFee(destinationChainSelector, evm2AnyMessage);
 
         if (fees > address(this).balance)
             revert NotEnoughBalance(address(this).balance, fees);
 
-        // transfer the users funds from their wallet into the smart contract and the fee into the treasury wallet 
-        IERC20(_token).transferFrom(msg.sender, address(this), _amount - feeAmount);
-        IERC20(_token).transferFrom(msg.sender, treasuryWallet, feeAmount);
+        // transfer the users funds from their wallet into the smart contract and the fee into the treasury wallet
+        IERC20(token).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amount - feeAmount
+        );
+        IERC20(token).safeTransferFrom(msg.sender, treasuryWallet, feeAmount);
 
         // approve the Router to spend tokens on contract's behalf. It will spend the amount of the given token
-        IERC20(_token).approve(address(router), _amount - feeAmount);
+        IERC20(token).safeApprove(address(router), amount - feeAmount);
 
         // Send the message through the router and store the returned message ID
         messageId = router.ccipSend{value: fees}(
-            _destinationChainSelector,
+            destinationChainSelector,
             evm2AnyMessage
         );
 
         // Emit an event with message details
         emit MessageSent(
             messageId,
-            _destinationChainSelector,
-            _receiver,
-            _receiverWallet,
-            _token,
-            _amount,
+            destinationChainSelector,
+            receiver,
+            receiverWallet,
+            token,
+            amount,
             address(0),
             fees
         );
@@ -406,12 +361,18 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
         ) // Make sure source chain and sender are allowlisted
     {
         s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
-        s_lastReceivedReceiverWallet = abi.decode(any2EvmMessage.data, (address)); // abi-decoding of the sent text
+        s_lastReceivedReceiverWallet = abi.decode(
+            any2EvmMessage.data,
+            (address)
+        ); // abi-decoding of the sent text
         // Expect one token to be transferred at once, but you can transfer several tokens.
         s_lastReceivedTokenAddress = any2EvmMessage.destTokenAmounts[0].token;
         s_lastReceivedTokenAmount = any2EvmMessage.destTokenAmounts[0].amount;
 
-        IERC20(s_lastReceivedTokenAddress).transfer(s_lastReceivedReceiverWallet, s_lastReceivedTokenAmount);
+        IERC20(s_lastReceivedTokenAddress).safeTransfer(
+            s_lastReceivedReceiverWallet,
+            s_lastReceivedTokenAmount
+        );
 
         emit MessageReceived(
             any2EvmMessage.messageId,
@@ -472,8 +433,8 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
     /// @notice Allows the contract owner to withdraw the entire balance of Ether from the contract.
     /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
     /// It should only be callable by the owner of the contract.
-    /// @param _beneficiary The address to which the Ether should be sent.
-    function withdraw(address _beneficiary) public onlyOwner {
+    /// @param beneficiary The address to which the Ether should be sent.
+    function withdraw(address beneficiary) public onlyOwner {
         // Retrieve the balance of this contract
         uint256 amount = address(this).balance;
 
@@ -481,26 +442,26 @@ contract MultichainTokenTransfers is CCIPReceiver, OwnerIsCreator {
         if (amount == 0) revert NothingToWithdraw();
 
         // Attempt to send the funds, capturing the success status and discarding any return data
-        (bool sent, ) = _beneficiary.call{value: amount}("");
+        (bool sent, ) = beneficiary.call{value: amount}("");
 
         // Revert if the send failed, with information about the attempted transfer
-        if (!sent) revert FailedToWithdrawEth(msg.sender, _beneficiary, amount);
+        if (!sent) revert FailedToWithdrawEth(msg.sender, beneficiary, amount);
     }
 
     /// @notice Allows the owner of the contract to withdraw all tokens of a specific ERC20 token.
     /// @dev This function reverts with a 'NothingToWithdraw' error if there are no tokens to withdraw.
-    /// @param _beneficiary The address to which the tokens will be sent.
-    /// @param _token The contract address of the ERC20 token to be withdrawn.
+    /// @param beneficiary The address to which the tokens will be sent.
+    /// @param token The contract address of the ERC20 token to be withdrawn.
     function withdrawToken(
-        address _beneficiary,
-        address _token
+        address beneficiary,
+        address token
     ) public onlyOwner {
         // Retrieve the balance of this contract
-        uint256 amount = IERC20(_token).balanceOf(address(this));
+        uint256 amount = IERC20(token).balanceOf(address(this));
 
         // Revert if there is nothing to withdraw
         if (amount == 0) revert NothingToWithdraw();
 
-        IERC20(_token).transfer(_beneficiary, amount);
+        IERC20(token).safeTransfer(beneficiary, amount);
     }
 }
