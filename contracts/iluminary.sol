@@ -733,7 +733,7 @@ abstract contract Pausable is Context {
  * The initial token distribution is specified within the constructor.
  */
 contract IluminaryToken is ERC20, Ownable, Pausable {
-    uint256 public constant maxSupply = 270000000 * 10 ** 18;
+    uint256 public constant maxSupply = 142_000_000 * 10 ** 18;
 
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
@@ -753,35 +753,42 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
         //CHANGE ADDRESSES
 
         /// SEED
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 1215000 * 10 ** 18);
-        _mint(vestingContract, 6885000 * 10 ** 18);
+        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 852_000 * 10 ** 18);
+        _mint(vestingContract, 4_828_000 * 10 ** 18);
 
         /// PRIVATE
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 3240000 * 10 ** 18);
-        _mint(vestingContract, 12960000 * 10 ** 18);
+        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 3_195_000 * 10 ** 18);
+        _mint(vestingContract, 18_105_000 * 10 ** 18);
 
         /// PUBLIC
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 16200000 * 10 ** 18);
+        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 8_520_000 * 10 ** 18);
 
         /// LIQUIDITY & EXCHANGES
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 54000000 * 10 ** 18);
+        _mint(
+            0x318cBF186eB13C74533943b054959867eE44eFFE,
+            17_040_000 * 10 ** 18
+        );
 
         /// COMMUNITY FUNDS
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 110700000 * 10 ** 18);
+        _mint(
+            0x318cBF186eB13C74533943b054959867eE44eFFE,
+            41_180_000 * 10 ** 18
+        );
 
         /// TEAM
-        _mint(vestingContract, 32400000 * 10 ** 18);
+        _mint(vestingContract, 17_040_000 * 10 ** 18);
 
         /// ADVISORS
-        _mint(vestingContract, 5400000 * 10 ** 18);
+        _mint(vestingContract, 2_840_000 * 10 ** 18);
 
         /// MARKETING
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 1350000 * 10 ** 18);
-        _mint(vestingContract, 12150000 * 10 ** 18);
+        _mint(vestingContract, 14_200_000 * 10 ** 18);
 
         /// R&D
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 1350000 * 10 ** 18);
-        _mint(vestingContract, 12150000 * 10 ** 18);
+        _mint(vestingContract, 7_100_000 * 10 ** 18);
+
+        /// RESERVE FUND
+        _mint(vestingContract, 7_100_000 * 10 ** 18);
     }
 
     /**

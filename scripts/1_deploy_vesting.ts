@@ -1,13 +1,11 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const IluminaryVesting = await ethers.getContractFactory("ILMTVesting");
+  const ilmtVesting = await ethers.deployContract('ILMTVesting');
 
-  const contractDeployed = await IluminaryVesting.deploy();
+  await ilmtVesting.waitForDeployment();
 
-  await contractDeployed.deployed();
-
-  console.log("iluminary vesting deployed to:", contractDeployed.address);
+  console.log("iluminary vesting deployed to:", ilmtVesting.target);
 }
 
 main().catch((error) => {
