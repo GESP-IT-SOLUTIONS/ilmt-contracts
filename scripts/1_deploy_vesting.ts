@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const ilmtVesting = await ethers.deployContract('ILMTVesting');
+  const ilmtVesting = await ethers.deployContract("ILMTVesting");
 
   await ilmtVesting.waitForDeployment();
 
