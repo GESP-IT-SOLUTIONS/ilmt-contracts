@@ -19,7 +19,11 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     /**
      * @dev Returns the value of tokens in existence.
@@ -47,7 +51,10 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     /**
      * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
@@ -75,7 +82,11 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 }
 
 /**
@@ -99,7 +110,6 @@ interface IERC20Metadata is IERC20 {
 }
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
-
 
 /**
  * @dev Provides information about the current execution context, including the
@@ -138,7 +148,10 @@ abstract contract Context {
 abstract contract Ownable is Context {
     address private _owner;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
@@ -185,7 +198,10 @@ abstract contract Ownable is Context {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
         _transferOwnership(newOwner);
     }
 
@@ -211,7 +227,11 @@ interface IERC20Errors {
      * @param balance Current balance for the interacting account.
      * @param needed Minimum amount required to perform a transfer.
      */
-    error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed);
+    error ERC20InsufficientBalance(
+        address sender,
+        uint256 balance,
+        uint256 needed
+    );
 
     /**
      * @dev Indicates a failure with the token `sender`. Used in transfers.
@@ -231,7 +251,11 @@ interface IERC20Errors {
      * @param allowance Amount of tokens a `spender` is allowed to operate with.
      * @param needed Minimum amount required to perform a transfer.
      */
-    error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed);
+    error ERC20InsufficientAllowance(
+        address spender,
+        uint256 allowance,
+        uint256 needed
+    );
 
     /**
      * @dev Indicates a failure with the `approver` of a token to be approved. Used in approvals.
@@ -272,7 +296,8 @@ interface IERC20Errors {
 abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
     mapping(address account => uint256) private _balances;
 
-    mapping(address account => mapping(address spender => uint256)) private _allowances;
+    mapping(address account => mapping(address spender => uint256))
+        private _allowances;
 
     uint256 private _totalSupply;
 
@@ -353,7 +378,10 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
     /**
      * @dev See {IERC20-allowance}.
      */
-    function allowance(address owner, address spender) public view virtual returns (uint256) {
+    function allowance(
+        address owner,
+        address spender
+    ) public view virtual returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -367,7 +395,10 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 value) public virtual returns (bool) {
+    function approve(
+        address spender,
+        uint256 value
+    ) public virtual returns (bool) {
         address owner = _msgSender();
         _approve(owner, spender, value);
         return true;
@@ -389,7 +420,11 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
      * - the caller must have allowance for ``from``'s tokens of at least
      * `value`.
      */
-    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public virtual returns (bool) {
         address spender = _msgSender();
         _spendAllowance(from, spender, value);
         _transfer(from, to, value);
@@ -406,7 +441,11 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
      *
      * NOTE: This function is not virtual, {_update} should be overridden instead.
      */
-    function _transfer(address from, address to, uint256 value) internal virtual {
+    function _transfer(
+        address from,
+        address to,
+        uint256 value
+    ) internal virtual {
         if (from == address(0)) {
             revert ERC20InvalidSender(address(0));
         }
@@ -519,7 +558,12 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
      *
      * Requirements are the same as {_approve}.
      */
-    function _approve(address owner, address spender, uint256 value, bool emitEvent) internal virtual {
+    function _approve(
+        address owner,
+        address spender,
+        uint256 value,
+        bool emitEvent
+    ) internal virtual {
         if (owner == address(0)) {
             revert ERC20InvalidApprover(address(0));
         }
@@ -540,11 +584,19 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
      *
      * Does not emit an {Approval} event.
      */
-    function _spendAllowance(address owner, address spender, uint256 value) internal virtual {
+    function _spendAllowance(
+        address owner,
+        address spender,
+        uint256 value
+    ) internal virtual {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
             if (currentAllowance < value) {
-                revert ERC20InsufficientAllowance(spender, currentAllowance, value);
+                revert ERC20InsufficientAllowance(
+                    spender,
+                    currentAllowance,
+                    value
+                );
             }
             unchecked {
                 _approve(owner, spender, currentAllowance - value, false);
@@ -681,7 +733,7 @@ abstract contract Pausable is Context {
  * The initial token distribution is specified within the constructor.
  */
 contract IluminaryToken is ERC20, Ownable, Pausable {
-    uint256 public constant maxSupply = 270000000 * 10 ** 18;
+    uint256 public constant maxSupply = 142_000_000 * 10 ** 18;
 
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
@@ -701,35 +753,42 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
         //CHANGE ADDRESSES
 
         /// SEED
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 1215000 * 10 ** 18);
-        _mint(vestingContract, 6885000 * 10 ** 18); 
+        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 852_000 * 10 ** 18);
+        _mint(vestingContract, 4_828_000 * 10 ** 18);
 
         /// PRIVATE
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 3240000 * 10 ** 18);
-        _mint(vestingContract, 12960000 * 10 ** 18); 
+        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 3_195_000 * 10 ** 18);
+        _mint(vestingContract, 18_105_000 * 10 ** 18);
 
         /// PUBLIC
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 16200000 * 10 ** 18);
+        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 8_520_000 * 10 ** 18);
 
         /// LIQUIDITY & EXCHANGES
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 54000000 * 10 ** 18);
+        _mint(
+            0x318cBF186eB13C74533943b054959867eE44eFFE,
+            17_040_000 * 10 ** 18
+        );
 
         /// COMMUNITY FUNDS
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 110700000 * 10 ** 18);
+        _mint(
+            0x318cBF186eB13C74533943b054959867eE44eFFE,
+            41_180_000 * 10 ** 18
+        );
 
         /// TEAM
-        _mint(vestingContract, 32400000 * 10 ** 18);
+        _mint(vestingContract, 17_040_000 * 10 ** 18);
 
         /// ADVISORS
-        _mint(vestingContract, 5400000 * 10 ** 18); 
+        _mint(vestingContract, 2_840_000 * 10 ** 18);
 
         /// MARKETING
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 1350000 * 10 ** 18);
-        _mint(vestingContract, 12150000 * 10 ** 18);
+        _mint(vestingContract, 14_200_000 * 10 ** 18);
 
         /// R&D
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 1350000 * 10 ** 18);
-        _mint(vestingContract, 12150000 * 10 ** 18);
+        _mint(vestingContract, 7_100_000 * 10 ** 18);
+
+        /// RESERVE FUND
+        _mint(vestingContract, 7_100_000 * 10 ** 18);
     }
 
     /**
@@ -755,7 +814,7 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
         address from,
         address to,
         uint256 amount
-    ) internal virtual override whenNotPaused { 
+    ) internal virtual override whenNotPaused {
         super._transfer(from, to, amount);
     }
 
@@ -772,7 +831,10 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
      * @param account The account from which tokens will be burned.
      * @param amount Amount of tokens to be burned.
      */
-    function burnFrom(address account, uint256 amount) public virtual onlyBurner {
+    function burnFrom(
+        address account,
+        uint256 amount
+    ) public virtual onlyBurner {
         _spendAllowance(account, _msgSender(), amount);
         _burn(account, amount);
     }

@@ -19,7 +19,11 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     /**
      * @dev Returns the value of tokens in existence.
@@ -47,7 +51,10 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     /**
      * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
@@ -75,7 +82,11 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 }
 
 /**
@@ -137,7 +148,10 @@ abstract contract Context {
 abstract contract Ownable is Context {
     address private _owner;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
@@ -184,7 +198,10 @@ abstract contract Ownable is Context {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
         _transferOwnership(newOwner);
     }
 
@@ -205,7 +222,6 @@ abstract contract Ownable is Context {
  * The contract allows the distribution of tokens over specified cliffs, ensuring that tokens are released over time rather than all at once.
  */
 contract ILMTVesting is Ownable {
-
     // Defines a vesting schedule for a beneficiary
     struct VestingSchedule {
         uint256[] tokensPerCliff; // Amount of tokens to release at each cliff
@@ -223,7 +239,6 @@ contract ILMTVesting is Ownable {
      * @dev Constructor that initializes the contract. It can optionally set up initial vesting schedules.
      */
     constructor() {
-
         // tokenContract = ;
 
         /*
@@ -237,20 +252,230 @@ contract ILMTVesting is Ownable {
         //CHANGE ADDRESSES
 
         /// TEAM
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].tokensPerCliff = [984960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18, 1308960 * 10 ** 18];
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [block.timestamp + 365 days, block.timestamp + 395 days, block.timestamp + 425 days, block.timestamp + 455 days, block.timestamp + 485 days, block.timestamp + 515 days, block.timestamp + 545 days, block.timestamp + 575 days, block.timestamp + 605 days, block.timestamp + 635 days, block.timestamp + 665 days, block.timestamp + 695 days, block.timestamp + 725 days, block.timestamp + 755 days, block.timestamp + 785 days, block.timestamp + 815 days, block.timestamp + 845 days, block.timestamp + 875 days, block.timestamp + 905 days, block.timestamp + 935 days, block.timestamp + 965 days, block.timestamp + 995 days, block.timestamp + 1025 days, block.timestamp + 1055 days, block.timestamp + 1085 days];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE]
+            .tokensPerCliff = [
+            984960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18,
+            1308960 * 10 ** 18
+        ];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [
+            block.timestamp + 365 days,
+            block.timestamp + 395 days,
+            block.timestamp + 425 days,
+            block.timestamp + 455 days,
+            block.timestamp + 485 days,
+            block.timestamp + 515 days,
+            block.timestamp + 545 days,
+            block.timestamp + 575 days,
+            block.timestamp + 605 days,
+            block.timestamp + 635 days,
+            block.timestamp + 665 days,
+            block.timestamp + 695 days,
+            block.timestamp + 725 days,
+            block.timestamp + 755 days,
+            block.timestamp + 785 days,
+            block.timestamp + 815 days,
+            block.timestamp + 845 days,
+            block.timestamp + 875 days,
+            block.timestamp + 905 days,
+            block.timestamp + 935 days,
+            block.timestamp + 965 days,
+            block.timestamp + 995 days,
+            block.timestamp + 1025 days,
+            block.timestamp + 1055 days,
+            block.timestamp + 1085 days
+        ];
 
         /// ADVISORS
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].tokensPerCliff = [164160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18, 218160 * 10 ** 18];
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [block.timestamp + 365 days, block.timestamp + 395 days, block.timestamp + 425 days, block.timestamp + 455 days, block.timestamp + 485 days, block.timestamp + 515 days, block.timestamp + 545 days, block.timestamp + 575 days, block.timestamp + 605 days, block.timestamp + 635 days, block.timestamp + 665 days, block.timestamp + 695 days, block.timestamp + 725 days, block.timestamp + 755 days, block.timestamp + 785 days, block.timestamp + 815 days, block.timestamp + 845 days, block.timestamp + 875 days, block.timestamp + 905 days, block.timestamp + 935 days, block.timestamp + 965 days, block.timestamp + 995 days, block.timestamp + 1025 days, block.timestamp + 1055 days, block.timestamp + 1085 days];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE]
+            .tokensPerCliff = [
+            164160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18,
+            218160 * 10 ** 18
+        ];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [
+            block.timestamp + 365 days,
+            block.timestamp + 395 days,
+            block.timestamp + 425 days,
+            block.timestamp + 455 days,
+            block.timestamp + 485 days,
+            block.timestamp + 515 days,
+            block.timestamp + 545 days,
+            block.timestamp + 575 days,
+            block.timestamp + 605 days,
+            block.timestamp + 635 days,
+            block.timestamp + 665 days,
+            block.timestamp + 695 days,
+            block.timestamp + 725 days,
+            block.timestamp + 755 days,
+            block.timestamp + 785 days,
+            block.timestamp + 815 days,
+            block.timestamp + 845 days,
+            block.timestamp + 875 days,
+            block.timestamp + 905 days,
+            block.timestamp + 935 days,
+            block.timestamp + 965 days,
+            block.timestamp + 995 days,
+            block.timestamp + 1025 days,
+            block.timestamp + 1055 days,
+            block.timestamp + 1085 days
+        ];
 
         /// MARKETING
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].tokensPerCliff = [1350000 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18];
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [block.timestamp + 120 days, block.timestamp + 150 days, block.timestamp + 180 days, block.timestamp + 270 days, block.timestamp + 300 days, block.timestamp + 330 days, block.timestamp + 365 days, block.timestamp + 395 days, block.timestamp + 425 days, block.timestamp + 455 days, block.timestamp + 485 days, block.timestamp + 515 days, block.timestamp + 545 days, block.timestamp + 575 days, block.timestamp + 605 days, block.timestamp + 635 days, block.timestamp + 665 days, block.timestamp + 695 days, block.timestamp + 725 days, block.timestamp + 755 days, block.timestamp + 785 days, block.timestamp + 815 days, block.timestamp + 845 days, block.timestamp + 875 days];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE]
+            .tokensPerCliff = [
+            1350000 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18
+        ];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [
+            block.timestamp + 120 days,
+            block.timestamp + 150 days,
+            block.timestamp + 180 days,
+            block.timestamp + 270 days,
+            block.timestamp + 300 days,
+            block.timestamp + 330 days,
+            block.timestamp + 365 days,
+            block.timestamp + 395 days,
+            block.timestamp + 425 days,
+            block.timestamp + 455 days,
+            block.timestamp + 485 days,
+            block.timestamp + 515 days,
+            block.timestamp + 545 days,
+            block.timestamp + 575 days,
+            block.timestamp + 605 days,
+            block.timestamp + 635 days,
+            block.timestamp + 665 days,
+            block.timestamp + 695 days,
+            block.timestamp + 725 days,
+            block.timestamp + 755 days,
+            block.timestamp + 785 days,
+            block.timestamp + 815 days,
+            block.timestamp + 845 days,
+            block.timestamp + 875 days
+        ];
 
         /// R&D
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].tokensPerCliff = [1350000 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18, 506250 * 10 ** 18];
-        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [block.timestamp + 120 days, block.timestamp + 150 days, block.timestamp + 180 days, block.timestamp + 270 days, block.timestamp + 300 days, block.timestamp + 330 days, block.timestamp + 365 days, block.timestamp + 395 days, block.timestamp + 425 days, block.timestamp + 455 days, block.timestamp + 485 days, block.timestamp + 515 days, block.timestamp + 545 days, block.timestamp + 575 days, block.timestamp + 605 days, block.timestamp + 635 days, block.timestamp + 665 days, block.timestamp + 695 days, block.timestamp + 725 days, block.timestamp + 755 days, block.timestamp + 785 days, block.timestamp + 815 days, block.timestamp + 845 days, block.timestamp + 875 days];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE]
+            .tokensPerCliff = [
+            1350000 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18,
+            506250 * 10 ** 18
+        ];
+        vestingSchedules[0x318cBF186eB13C74533943b054959867eE44eFFE].cliffs = [
+            block.timestamp + 120 days,
+            block.timestamp + 150 days,
+            block.timestamp + 180 days,
+            block.timestamp + 270 days,
+            block.timestamp + 300 days,
+            block.timestamp + 330 days,
+            block.timestamp + 365 days,
+            block.timestamp + 395 days,
+            block.timestamp + 425 days,
+            block.timestamp + 455 days,
+            block.timestamp + 485 days,
+            block.timestamp + 515 days,
+            block.timestamp + 545 days,
+            block.timestamp + 575 days,
+            block.timestamp + 605 days,
+            block.timestamp + 635 days,
+            block.timestamp + 665 days,
+            block.timestamp + 695 days,
+            block.timestamp + 725 days,
+            block.timestamp + 755 days,
+            block.timestamp + 785 days,
+            block.timestamp + 815 days,
+            block.timestamp + 845 days,
+            block.timestamp + 875 days
+        ];
     }
 
     /**
@@ -258,7 +483,9 @@ contract ILMTVesting is Ownable {
      * @param beneficiary The address of the beneficiary whose vesting schedule is being queried.
      * @return The vesting schedule of the specified beneficiary.
      */
-    function getVestingSchedule(address beneficiary) external view returns(VestingSchedule memory) {
+    function getVestingSchedule(
+        address beneficiary
+    ) external view returns (VestingSchedule memory) {
         return vestingSchedules[beneficiary];
     }
 
@@ -268,11 +495,20 @@ contract ILMTVesting is Ownable {
      * @param tokens An array of token amounts to be released per cliff.
      * @param cliffs An array of timestamps for each cliff.
      */
-    function addVestingSchedule(address[] memory receivers, uint256[] memory tokens, uint256[] memory cliffs) external onlyOwner {
+    function addVestingSchedule(
+        address[] memory receivers,
+        uint256[] memory tokens,
+        uint256[] memory cliffs
+    ) external onlyOwner {
         require(tokens.length == cliffs.length, "Array sizes do not match!");
 
         for (uint i = 0; i < receivers.length; i++) {
-            require(vestingSchedules[receivers[i]].tokensPerCliff.length == 0 || vestingSchedules[receivers[i]].lastCliffClaimed == vestingSchedules[receivers[i]].cliffs.length , "Vesting Schedule already active!");
+            require(
+                vestingSchedules[receivers[i]].tokensPerCliff.length == 0 ||
+                    vestingSchedules[receivers[i]].lastCliffClaimed ==
+                    vestingSchedules[receivers[i]].cliffs.length,
+                "Vesting Schedule already active!"
+            );
 
             vestingSchedules[receivers[i]].tokensPerCliff = tokens;
             vestingSchedules[receivers[i]].cliffs = cliffs;
@@ -284,7 +520,9 @@ contract ILMTVesting is Ownable {
      * @param beneficiary The address of the beneficiary.
      * @return The total amount of tokens that the beneficiary can currently claim.
      */
-    function vestedTokensAvailable(address beneficiary) external view returns(uint256) {
+    function vestedTokensAvailable(
+        address beneficiary
+    ) external view returns (uint256) {
         (uint256 availableTokens, ) = vestedTokensAvailable_(beneficiary);
         return availableTokens;
     }
@@ -295,18 +533,23 @@ contract ILMTVesting is Ownable {
      * @return availableTokens The total amount of vested tokens available for claim.
      * @return lastCliff The index of the last cliff reached.
      */
-    function vestedTokensAvailable_(address beneficiary) internal view returns(uint256, uint) {
+    function vestedTokensAvailable_(
+        address beneficiary
+    ) internal view returns (uint256, uint) {
         VestingSchedule memory vestingSchedule_ = vestingSchedules[beneficiary];
         uint256 availableTokens = 0;
         uint lastCliff = vestingSchedule_.cliffs.length;
         for (uint i = vestingSchedule_.lastCliffClaimed; i < lastCliff; i++) {
             if (block.timestamp >= vestingSchedule_.cliffs[i]) {
                 availableTokens += vestingSchedule_.tokensPerCliff[i];
-            } 
-            else {
+            } else {
                 lastCliff = i;
                 if (lastCliff > 0) {
-                    availableTokens += (((vestingSchedule_.cliffs[i] - block.timestamp) / 1 days) * vestingSchedule_.tokensPerCliff[i]) / ((vestingSchedule_.cliffs[i] - vestingSchedule_.cliffs[i - 1]) / 1 days);
+                    availableTokens +=
+                        (((vestingSchedule_.cliffs[i] - block.timestamp) /
+                            1 days) * vestingSchedule_.tokensPerCliff[i]) /
+                        ((vestingSchedule_.cliffs[i] -
+                            vestingSchedule_.cliffs[i - 1]) / 1 days);
                 }
                 break;
             }
@@ -320,11 +563,16 @@ contract ILMTVesting is Ownable {
      * @param claimer The address of the beneficiary claiming their tokens.
      */
     function claimVestedTokens(address claimer) external {
-        (uint256 availableTokens, uint lastCliff) = vestedTokensAvailable_(claimer);
+        (uint256 availableTokens, uint lastCliff) = vestedTokensAvailable_(
+            claimer
+        );
         require(availableTokens > 0, "No tokens available to claim!");
 
         vestingSchedules[claimer].lastCliffClaimed = lastCliff;
-        require(IERC20(tokenContract).transfer(claimer, availableTokens), "Unsuccessful Transfer!");
+        require(
+            IERC20(tokenContract).transfer(claimer, availableTokens),
+            "Unsuccessful Transfer!"
+        );
     }
 
     /// Administrative functions
@@ -355,11 +603,17 @@ contract ILMTVesting is Ownable {
      * @param amount The amount of tokens to withdraw.
      * @param token The contract address of the token to withdraw.
      */
-    function withdraw(address recipient, uint256 amount, address token) external onlyOwner {
+    function withdraw(
+        address recipient,
+        uint256 amount,
+        address token
+    ) external onlyOwner {
         require(recipient != address(0), "Invalid Address!");
         require(amount > 0, "Invalid Amount!");
         require(token != address(0), "Invalid Token!");
-        require(IERC20(token).transfer(recipient, amount), "Unsuccessful Transfer!");
+        require(
+            IERC20(token).transfer(recipient, amount),
+            "Unsuccessful Transfer!"
+        );
     }
-
 }
