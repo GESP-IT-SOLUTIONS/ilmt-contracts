@@ -238,17 +238,7 @@ contract ILMTVesting is Ownable {
     /**
      * @dev Constructor that initializes the contract. It can optionally set up initial vesting schedules.
      */
-    constructor() {
-        // tokenContract = ;
-
-        /*
-
-        Minting the amount released at TGE to the respective wallets and minting the vested amount to the vesting contract
-
-        Some phases like SEED & PRIVATE will be distributed between various addresses, so we establish no vesting schedule initially and allow the owner to set further down the line
-        */
-
-    }
+    constructor() {}
 
     /**
      * @notice Retrieves the vesting schedule for a beneficiary.

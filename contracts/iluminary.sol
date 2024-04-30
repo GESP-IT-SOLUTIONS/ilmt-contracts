@@ -746,47 +746,47 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
      *
      * @param vestingContract_ Address of the vesting contract for team and advisors' tokens.
      */
-    constructor(address vestingContract_) ERC20("Iluminary Token", "ILMT") {
+    constructor(address vestingContract_) ERC20("iLuminary Token", "ILMT") {
         require(vestingContract_ != address(0), "Invalid Address!");
         vestingContract = vestingContract_;
 
         //CHANGE ADDRESSES
 
         /// SEED
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 5_680_000 * 10 ** 18);
+        _mint(0x9285f36d8fAF00bA71b054c566aa14834995D353, 5_680_000 * 10 ** 18);
 
         /// PRIVATE
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 21_300_000 * 10 ** 18);
+        _mint(0x5eA2a2d037ecbb8aE67a503C68C2FE9E89bf68E1, 21_300_000 * 10 ** 18);
 
         /// PUBLIC
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 8_520_000 * 10 ** 18);
+        _mint(0x433751e059031ECd1a93Aa15bcE69d469f8b19fd, 8_520_000 * 10 ** 18);
 
         /// LIQUIDITY & EXCHANGES
         _mint(
-            0xA32baa904D5B34A3e2b5525948DA83e486ffB688,
+            0x7fc1cCC76bB117B9E99E6CeE8D0A84d34d731Da6,
             17_040_000 * 10 ** 18
         );
 
         /// COMMUNITY FUNDS
         _mint(
-            0xA32baa904D5B34A3e2b5525948DA83e486ffB688,
+            0xb6D819c0C7AfE8a5A1e0480D5c4D7bF4e35BF331,
             41_180_000 * 10 ** 18
         );
 
         /// TEAM
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 17_040_000 * 10 ** 18);
+        _mint(0xd1B691cBC1d897204Fd44E0Ee96Ad9D70f3bbf28, 17_040_000 * 10 ** 18);
 
         /// ADVISORS
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 2_840_000 * 10 ** 18);
+        _mint(0x4D14B50190d7b75a067c8d484E94a34f2AB7f4c1, 2_840_000 * 10 ** 18);
 
         /// MARKETING
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 14_200_000 * 10 ** 18);
+        _mint(0x2cad916a6c0674EcaE8B3b6a9E8cf1B01dd1bD98, 14_200_000 * 10 ** 18);
 
         /// R&D
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 7_100_000 * 10 ** 18);
+        _mint(0x20c21645581Dd8F43b41b2bbA61bff35885B1d0B, 7_100_000 * 10 ** 18);
 
         /// RESERVE FUND
-        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 7_100_000 * 10 ** 18);
+        _mint(0x297774A044BA9eADd340aB0CeE537C2eA1c2D8be, 7_100_000 * 10 ** 18);
     }
 
     /**
