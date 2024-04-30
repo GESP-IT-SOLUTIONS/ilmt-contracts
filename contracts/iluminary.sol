@@ -753,42 +753,40 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
         //CHANGE ADDRESSES
 
         /// SEED
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 852_000 * 10 ** 18);
-        _mint(vestingContract, 4_828_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 5_680_000 * 10 ** 18);
 
         /// PRIVATE
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 3_195_000 * 10 ** 18);
-        _mint(vestingContract, 18_105_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 21_300_000 * 10 ** 18);
 
         /// PUBLIC
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 8_520_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 8_520_000 * 10 ** 18);
 
         /// LIQUIDITY & EXCHANGES
         _mint(
-            0x318cBF186eB13C74533943b054959867eE44eFFE,
+            0xA32baa904D5B34A3e2b5525948DA83e486ffB688,
             17_040_000 * 10 ** 18
         );
 
         /// COMMUNITY FUNDS
         _mint(
-            0x318cBF186eB13C74533943b054959867eE44eFFE,
+            0xA32baa904D5B34A3e2b5525948DA83e486ffB688,
             41_180_000 * 10 ** 18
         );
 
         /// TEAM
-        _mint(vestingContract, 17_040_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 17_040_000 * 10 ** 18);
 
         /// ADVISORS
-        _mint(vestingContract, 2_840_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 2_840_000 * 10 ** 18);
 
         /// MARKETING
-        _mint(vestingContract, 14_200_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 14_200_000 * 10 ** 18);
 
         /// R&D
-        _mint(vestingContract, 7_100_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 7_100_000 * 10 ** 18);
 
         /// RESERVE FUND
-        _mint(vestingContract, 7_100_000 * 10 ** 18);
+        _mint(0xA32baa904D5B34A3e2b5525948DA83e486ffB688, 7_100_000 * 10 ** 18);
     }
 
     /**
