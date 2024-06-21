@@ -294,10 +294,9 @@ interface IERC20Errors {
  * these events, as it isn't required by the specification.
  */
 abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
-    mapping(address account => uint256) private _balances;
+    mapping(address => uint256) private _balances;
 
-    mapping(address account => mapping(address spender => uint256))
-        private _allowances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
 
@@ -719,7 +718,7 @@ abstract contract Pausable is Context {
 }
 
 /**
- * @title IluminaryToken
+ * @title ITTT
  * @dev Extends ERC20 token standard with functionalities for minting, burning,
  * pausing the token transfer, and managing token vesting.
  *
@@ -732,7 +731,7 @@ abstract contract Pausable is Context {
  *
  * The initial token distribution is specified within the constructor.
  */
-contract IluminaryToken is ERC20, Ownable, Pausable {
+contract ITTT is ERC20, Ownable, Pausable {
     uint256 public constant maxSupply = 142_000_000 * 10 ** 18;
 
     mapping(address => bool) public minters;
@@ -746,49 +745,12 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
      *
      * @param vestingContract_ Address of the vesting contract for team and advisors' tokens.
      */
-    constructor(address vestingContract_) ERC20("Iluminary Token", "ILMT") {
+    constructor(address vestingContract_) ERC20("ITTT", "ITTT") {
         require(vestingContract_ != address(0), "Invalid Address!");
         vestingContract = vestingContract_;
 
         //CHANGE ADDRESSES
-
-        /// SEED
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 852_000 * 10 ** 18);
-        _mint(vestingContract, 4_828_000 * 10 ** 18);
-
-        /// PRIVATE
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 3_195_000 * 10 ** 18);
-        _mint(vestingContract, 18_105_000 * 10 ** 18);
-
-        /// PUBLIC
-        _mint(0x318cBF186eB13C74533943b054959867eE44eFFE, 8_520_000 * 10 ** 18);
-
-        /// LIQUIDITY & EXCHANGES
-        _mint(
-            0x318cBF186eB13C74533943b054959867eE44eFFE,
-            17_040_000 * 10 ** 18
-        );
-
-        /// COMMUNITY FUNDS
-        _mint(
-            0x318cBF186eB13C74533943b054959867eE44eFFE,
-            41_180_000 * 10 ** 18
-        );
-
-        /// TEAM
-        _mint(vestingContract, 17_040_000 * 10 ** 18);
-
-        /// ADVISORS
-        _mint(vestingContract, 2_840_000 * 10 ** 18);
-
-        /// MARKETING
-        _mint(vestingContract, 14_200_000 * 10 ** 18);
-
-        /// R&D
-        _mint(vestingContract, 7_100_000 * 10 ** 18);
-
-        /// RESERVE FUND
-        _mint(vestingContract, 7_100_000 * 10 ** 18);
+        _mint(msg.sender, maxSupply);
     }
 
     /**
@@ -888,7 +850,6 @@ contract IluminaryToken is ERC20, Ownable, Pausable {
 
     /**
      * @dev Unpauses all token transfers.
-     */
     function unpause() external onlyOwner {
         _unpause();
     }
