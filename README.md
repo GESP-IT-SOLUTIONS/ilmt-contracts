@@ -94,7 +94,7 @@ ilmt-contracts/
 ### **iluminary.sol (ILMT Token)**
 
 - **Standard**: ERC20 with OpenZeppelin implementation
-- **Total Supply**: 144,000,000 ILMT
+- **Total Supply**: 142,000,000 ILMT
 - **Decimals**: 18
 - **Features**: Burnable, Pausable, Role-based access control
 - **Security Score**: 9.0/10 ✅
