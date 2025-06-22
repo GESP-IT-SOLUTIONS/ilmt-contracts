@@ -97,7 +97,7 @@ ilmt-contracts/
 - **Total Supply**: 144,000,000 ILMT
 - **Decimals**: 18
 - **Features**: Burnable, Pausable, Role-based access control
-- **Security Score**: 7.5/10 ⚠️ (Centralization concerns)
+- **Security Score**: 9.0/10 ✅
 
 ## 🛡️ Security Features
 
@@ -324,7 +324,7 @@ npm install
 - **Documentation**: [docs.iluminary.io](https://docs.iluminary.io)
 - **Discord**: [discord.gg/iluminary](https://discord.gg/iluminary)
 - **Telegram**: [t.me/iluminary](https://t.me/iluminary)
-- **Email**: security@iluminary.io
+- **Email**: contact[at]iluminary.io
 
 ## 📄 License
 
