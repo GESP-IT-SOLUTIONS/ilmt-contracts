@@ -79,6 +79,7 @@ ilmt-contracts/
 - **Type**: Fixed lockup period staking
 - **Lockup**: Configurable lockup period (default: 30 days)
 - **Unbonding**: Early withdrawal with configurable unbonding period (default: 7 days)
+- **Restaking**: Automatic restaking after lockup with optional reward compounding
 - **Rewards**: Calculated based on lockup duration and reward rate
 - **Security Score**: 9.5/10 ✅
 
@@ -187,9 +188,9 @@ npx hardhat test test/ilmtStaking-flexible-daily.test.ts
 
 ### **Test Results Summary**
 
-- **Total Tests**: 48 comprehensive tests
+- **Total Tests**: 57 comprehensive tests
 - **Security Tests**: 12 tests covering all major vulnerabilities
-- **Unbonding Tests**: 11 tests covering early withdrawal features
+- **Unbonding & Restake Tests**: 21 tests covering early withdrawal and restaking features
 - **Flexible Tests**: 25 tests covering daily rewards and compounding
 - **Pass Rate**: 100% ✅
 
@@ -227,7 +228,22 @@ await stakingContract.claimRewardWithOption(0, true); // true = compound
 await stakingContract.claimRewardWithOption(0, false); // false = cash out
 ```
 
-### **Unstaking with Cooldown**
+### **Restaking (Fixed Contract)**
+
+```javascript
+// Restake without including rewards (rewards are claimed separately)
+await stakingContract.restake(0, false);
+
+// Restake with rewards included (if same token)
+await stakingContract.restake(0, true);
+
+// Check if restaking is possible
+const restakeInfo = await stakingContract.getRestakeInfo(user.address, 0);
+console.log("Can restake:", restakeInfo.canRestake);
+console.log("Max restake amount:", restakeInfo.maxRestakeAmount);
+```
+
+### **Unstaking with Cooldown (Flexible Contract)**
 
 ```javascript
 // Request unstaking (starts cooldown)

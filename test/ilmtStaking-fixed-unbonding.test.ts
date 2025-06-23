@@ -255,4 +255,522 @@ describe("ilmtStakingFixed - Unbonding Period Tests", function () {
       console.log("\n🏆 COMPLETE JOURNEY SUCCESSFUL!");
     });
   });
+
+  it("Should prevent setting unbonding period to zero", async function () {
+    await expect(stakingFixed.setUnbondingPeriod(0))
+      .to.be.revertedWith("Unbonding period must be > 0");
+  });
+});
+
+describe("Restake Functionality", function () {
+  let stakingContract: any;
+  let mockToken: any;
+  let owner: any;
+  let user1: any;
+  let user2: any;
+
+  beforeEach(async function () {
+    [owner, user1, user2] = await ethers.getSigners();
+    
+    // Deploy mock token
+    const MockToken = await ethers.getContractFactory("MockERC20");
+    mockToken = await MockToken.deploy("Test Token", "TEST", ethers.parseEther("1000000"));
+    
+    // Deploy staking contract
+    const StakingContract = await ethers.getContractFactory("ilmtStakingFixed");
+    stakingContract = await StakingContract.deploy(await mockToken.getAddress());
+    
+    // Add a pool (30 days lockup, 20% reward rate)
+    await stakingContract.addPool(
+      await mockToken.getAddress(),
+      20, // 20% reward rate
+      30 * 24 * 60 * 60, // 30 days lockup
+      ethers.parseEther("1000") // 1000 tokens max
+    );
+    
+    // Transfer tokens to users
+    await mockToken.transfer(user1.address, ethers.parseEther("500"));
+    await mockToken.transfer(user2.address, ethers.parseEther("500"));
+    
+    // Approve staking contract
+    await mockToken.connect(user1).approve(await stakingContract.getAddress(), ethers.parseEther("1000"));
+    await mockToken.connect(user2).approve(await stakingContract.getAddress(), ethers.parseEther("1000"));
+    
+    // Fund contract with reward tokens
+    await mockToken.transfer(await stakingContract.getAddress(), ethers.parseEther("10000"));
+  });
+
+  it("Should not allow restaking before lockup period ends", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Try to restake immediately (should fail)
+    await expect(stakingContract.connect(user1).restake(0, false))
+      .to.be.revertedWith("Tokens are still locked");
+  });
+
+  it("Should allow restaking after lockup period without rewards", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Check restake info
+    const restakeInfo = await stakingContract.getRestakeInfo(user1.address, 0);
+    expect(restakeInfo.canRestake).to.be.true;
+    expect(restakeInfo.currentStakedAmount).to.equal(ethers.parseEther("100"));
+    expect(restakeInfo.rewardTokenSameAsStaking).to.be.true;
+    
+    // Restake without including rewards
+    const tx = await stakingContract.connect(user1).restake(0, false);
+    await expect(tx).to.emit(stakingContract, "Restaked")
+      .withArgs(user1.address, 0, ethers.parseEther("100"), 0, ethers.parseEther("100"));
+    
+    // Check that stake was reset
+    const stakeInfo = await stakingContract.getStakeInfo(user1.address, 0);
+    expect(stakeInfo.amount).to.equal(ethers.parseEther("100"));
+    expect(stakeInfo.since).to.be.closeTo(await time.latest(), 2);
+  });
+
+  it("Should allow restaking with rewards included (same token)", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Check pending rewards
+    const pendingReward = await stakingContract.getPendingReward(user1.address, 0);
+    expect(pendingReward).to.be.gt(0);
+    
+    // Get initial balance
+    const initialBalance = await mockToken.balanceOf(user1.address);
+    
+    // Restake with rewards included
+    const tx = await stakingContract.connect(user1).restake(0, true);
+    const expectedTotal = ethers.parseEther("100") + pendingReward;
+    
+    await expect(tx).to.emit(stakingContract, "Restaked");
+    
+    // Check the event arguments separately for more flexibility
+    const receipt = await tx.wait();
+    const restakedEvent = receipt.logs.find((log: any) => log.fragment?.name === "Restaked");
+    expect(restakedEvent.args[0]).to.equal(user1.address);
+    expect(restakedEvent.args[1]).to.equal(0);
+    expect(restakedEvent.args[2]).to.equal(ethers.parseEther("100"));
+    expect(restakedEvent.args[3]).to.be.gt(0); // Reward amount should be > 0
+    expect(restakedEvent.args[4]).to.equal(restakedEvent.args[2] + restakedEvent.args[3]); // Total should equal staked + reward
+    
+    // Check that total staked amount increased
+    const stakeInfo = await stakingContract.getStakeInfo(user1.address, 0);
+    expect(stakeInfo.amount).to.be.gt(ethers.parseEther("100")); // Should be more than original stake
+    
+    // User balance should remain the same (rewards were restaked)
+    const finalBalance = await mockToken.balanceOf(user1.address);
+    expect(finalBalance).to.equal(initialBalance);
+  });
+
+  it("Should claim rewards separately when restaking with different reward token", async function () {
+    // Deploy different reward token
+    const MockRewardToken = await ethers.getContractFactory("MockERC20");
+    const rewardToken = await MockRewardToken.deploy("Reward Token", "REWARD", ethers.parseEther("1000000"));
+    
+    // Add pool with different reward token
+    await stakingContract.addPool(
+      await rewardToken.getAddress(),
+      15, // 15% reward rate
+      30 * 24 * 60 * 60, // 30 days lockup
+      ethers.parseEther("1000") // 1000 tokens max
+    );
+    
+    // Fund contract with reward tokens
+    await rewardToken.transfer(await stakingContract.getAddress(), ethers.parseEther("10000"));
+    
+    // User stakes in new pool
+    await stakingContract.connect(user1).stake(1, ethers.parseEther("100"));
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Get initial reward token balance
+    const initialRewardBalance = await rewardToken.balanceOf(user1.address);
+    
+    // Restake with rewards (should claim rewards in different token)
+    const tx = await stakingContract.connect(user1).restake(1, true);
+    
+    await expect(tx).to.emit(stakingContract, "RewardClaimed");
+    await expect(tx).to.emit(stakingContract, "Restaked")
+      .withArgs(user1.address, 1, ethers.parseEther("100"), 0, ethers.parseEther("100"));
+    
+    // Check that reward tokens were claimed
+    const finalRewardBalance = await rewardToken.balanceOf(user1.address);
+    expect(finalRewardBalance).to.be.gt(initialRewardBalance);
+    
+    // Staked amount should remain the same
+    const stakeInfo = await stakingContract.getStakeInfo(user1.address, 1);
+    expect(stakeInfo.amount).to.equal(ethers.parseEther("100"));
+  });
+
+  it("Should respect maximum staking limit when restaking with rewards", async function () {
+    // Add a pool with low max staking amount
+    await stakingContract.addPool(
+      await mockToken.getAddress(),
+      50, // 50% reward rate (high to generate significant rewards)
+      30 * 24 * 60 * 60, // 30 days lockup
+      ethers.parseEther("110") // Low max limit
+    );
+    
+    // User stakes maximum amount
+    await stakingContract.connect(user1).stake(1, ethers.parseEther("100"));
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Check if restake would exceed limit
+    const restakeInfo = await stakingContract.getRestakeInfo(user1.address, 1);
+    const wouldExceedLimit = restakeInfo.maxRestakeAmount > ethers.parseEther("110");
+    
+    if (wouldExceedLimit) {
+      // Should fail if trying to restake with rewards
+      await expect(stakingContract.connect(user1).restake(1, true))
+        .to.be.revertedWith("Restake amount exceeds maximum staking limit");
+      
+      // Should succeed without rewards
+      await expect(stakingContract.connect(user1).restake(1, false))
+        .to.not.be.reverted;
+    } else {
+      // Should succeed in both cases
+      await expect(stakingContract.connect(user1).restake(1, true))
+        .to.not.be.reverted;
+    }
+  });
+
+  it("Should not allow restaking with inactive pool", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Deactivate pool
+    await stakingContract.setPoolStatus(0, false);
+    
+    // Should not allow restaking
+    await expect(stakingContract.connect(user1).restake(0, false))
+      .to.be.revertedWith("Pool is not active");
+  });
+
+  it("Should handle restaking with no pending rewards", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Fast forward exactly to lockup end (minimal rewards)
+    await time.increase(30 * 24 * 60 * 60); // Exactly 30 days
+    
+    // Restake (should work even with minimal/no rewards)
+    const tx = await stakingContract.connect(user1).restake(0, true);
+    
+    // Should emit restake event
+    await expect(tx).to.emit(stakingContract, "Restaked");
+    
+    // Stake should be reset
+    const stakeInfo = await stakingContract.getStakeInfo(user1.address, 0);
+    expect(stakeInfo.since).to.be.closeTo(await time.latest(), 2);
+  });
+
+  it("Should correctly update pool and total staked amounts", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Get initial totals
+    const initialPoolStaked = (await stakingContract.pools(0)).totalStaked;
+    const initialTotalStaked = await stakingContract.totalStaked();
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Get pending reward
+    const pendingReward = await stakingContract.getPendingReward(user1.address, 0);
+    
+    // Restake with rewards
+    await stakingContract.connect(user1).restake(0, true);
+    
+    // Check updated totals
+    const finalPoolStaked = (await stakingContract.pools(0)).totalStaked;
+    const finalTotalStaked = await stakingContract.totalStaked();
+    
+    // Should have increased by the reward amount
+    expect(finalPoolStaked).to.be.gt(initialPoolStaked);
+    expect(finalTotalStaked).to.be.gt(initialTotalStaked);
+  });
+
+  it("Should reset lastClaimedTimestamp on restake", async function () {
+    // User stakes 100 tokens
+    await stakingContract.connect(user1).stake(0, ethers.parseEther("100"));
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // Restake
+    await stakingContract.connect(user1).restake(0, false);
+    
+    // Check that lastClaimedTimestamp was reset
+    const stakeInfo = await stakingContract.getStakeInfo(user1.address, 0);
+    expect(stakeInfo.lastClaimedTimestamp).to.be.closeTo(await time.latest(), 2);
+    
+    // Should have no pending rewards immediately after restake
+    const pendingReward = await stakingContract.getPendingReward(user1.address, 0);
+    expect(pendingReward).to.equal(0);
+  });
+});
+
+describe("Statistics Tracking", function () {
+  let stakingFixed: any;
+  let stakingToken: any;
+  let owner: any;
+  let user1: any;
+  let user2: any;
+  let user3: any;
+
+  beforeEach(async function () {
+    [owner, user1, user2, user3] = await ethers.getSigners();
+    
+    // Deploy mock token
+    const MockToken = await ethers.getContractFactory("MockERC20");
+    stakingToken = await MockToken.deploy("Test Token", "TEST", ethers.parseEther("1000000"));
+    
+    // Deploy staking contract
+    const StakingContract = await ethers.getContractFactory("ilmtStakingFixed");
+    stakingFixed = await StakingContract.deploy(await stakingToken.getAddress());
+    
+    // Add multiple pools
+    await stakingFixed.addPool(
+      await stakingToken.getAddress(),
+      20, // 20% reward rate
+      30 * 24 * 60 * 60, // 30 days lockup
+      ethers.parseEther("1000") // 1000 tokens max
+    );
+    
+    await stakingFixed.addPool(
+      await stakingToken.getAddress(),
+      15, // 15% reward rate
+      60 * 24 * 60 * 60, // 60 days lockup
+      ethers.parseEther("2000") // 2000 tokens max
+    );
+    
+    // Transfer tokens to users
+    await stakingToken.transfer(user1.address, ethers.parseEther("1000"));
+    await stakingToken.transfer(user2.address, ethers.parseEther("1000"));
+    await stakingToken.transfer(user3.address, ethers.parseEther("1000"));
+    
+    // Approve staking contract
+    await stakingToken.connect(user1).approve(await stakingFixed.getAddress(), ethers.parseEther("1000"));
+    await stakingToken.connect(user2).approve(await stakingFixed.getAddress(), ethers.parseEther("1000"));
+    await stakingToken.connect(user3).approve(await stakingFixed.getAddress(), ethers.parseEther("1000"));
+    
+    // Fund contract with reward tokens
+    await stakingToken.transfer(await stakingFixed.getAddress(), ethers.parseEther("10000"));
+  });
+
+  it("Should track total value locked correctly", async function () {
+    // Initially should be 0
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(0);
+    
+    // User1 stakes 100 tokens in pool 0
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("100"));
+    
+    // User2 stakes 200 tokens in pool 1
+    await stakingFixed.connect(user2).stake(1, ethers.parseEther("200"));
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("300"));
+    
+    // User1 stakes additional 50 tokens in pool 1
+    await stakingFixed.connect(user1).stake(1, ethers.parseEther("50"));
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("350"));
+  });
+
+  it("Should track pool-specific TVL correctly", async function () {
+    // Initially both pools should have 0 TVL
+    expect(await stakingFixed.getPoolTVL(0)).to.equal(0);
+    expect(await stakingFixed.getPoolTVL(1)).to.equal(0);
+    
+    // User1 stakes in pool 0
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    expect(await stakingFixed.getPoolTVL(0)).to.equal(ethers.parseEther("100"));
+    expect(await stakingFixed.getPoolTVL(1)).to.equal(0);
+    
+    // User2 stakes in pool 1
+    await stakingFixed.connect(user2).stake(1, ethers.parseEther("200"));
+    expect(await stakingFixed.getPoolTVL(0)).to.equal(ethers.parseEther("100"));
+    expect(await stakingFixed.getPoolTVL(1)).to.equal(ethers.parseEther("200"));
+  });
+
+  it("Should track total active stakers correctly", async function () {
+    // Initially should be 0
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(0);
+    
+    // User1 stakes - should become active
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(1);
+    
+    // User1 stakes in another pool - should still be 1 (same user)
+    await stakingFixed.connect(user1).stake(1, ethers.parseEther("50"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(1);
+    
+    // User2 stakes - should become 2
+    await stakingFixed.connect(user2).stake(0, ethers.parseEther("200"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(2);
+    
+    // User3 stakes - should become 3
+    await stakingFixed.connect(user3).stake(1, ethers.parseEther("300"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(3);
+  });
+
+  it("Should track pool-specific active stakers correctly", async function () {
+    // Initially both pools should have 0 active stakers
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(0);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(0);
+    
+    // User1 stakes in pool 0
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(1);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(0);
+    
+    // User1 stakes in pool 1
+    await stakingFixed.connect(user1).stake(1, ethers.parseEther("50"));
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(1);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(1);
+    
+    // User2 stakes in pool 0
+    await stakingFixed.connect(user2).stake(0, ethers.parseEther("200"));
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(2);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(1);
+  });
+
+  it("Should update statistics when users unstake", async function () {
+    // Setup: multiple users stake
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    await stakingFixed.connect(user1).stake(1, ethers.parseEther("50"));
+    await stakingFixed.connect(user2).stake(0, ethers.parseEther("200"));
+    
+    // Verify initial state
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("350"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(2);
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(2);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(1);
+    
+    // Fast forward past lockup period
+    await time.increase(31 * 24 * 60 * 60); // 31 days
+    
+    // User1 unstakes from pool 0
+    await stakingFixed.connect(user1).unstake(0);
+    
+    // Check updated statistics
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("250"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(2); // User1 still has stake in pool 1
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(1);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(1);
+    
+    // Fast forward more for pool 1 lockup
+    await time.increase(30 * 24 * 60 * 60); // Additional 30 days
+    
+    // User1 unstakes from pool 1 (last pool)
+    await stakingFixed.connect(user1).unstake(1);
+    
+    // Now user1 should be removed from active stakers
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("200"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(1); // Only user2 remains
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(1);
+    expect(await stakingFixed.getPoolActiveStakers(1)).to.equal(0);
+  });
+
+  it("Should provide comprehensive pool statistics", async function () {
+    // Stake some tokens
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    await stakingFixed.connect(user2).stake(0, ethers.parseEther("200"));
+    
+    const poolStats = await stakingFixed.getPoolStats(0);
+    
+    expect(poolStats.poolTotalStaked).to.equal(ethers.parseEther("300"));
+    expect(poolStats.poolActiveStakers).to.equal(2);
+    expect(poolStats.rewardRate).to.equal(20);
+    expect(poolStats.lockupPeriod).to.equal(30 * 24 * 60 * 60);
+    expect(poolStats.maxStakingAmount).to.equal(ethers.parseEther("1000"));
+    expect(poolStats.isActive).to.be.true;
+    expect(poolStats.rewardToken).to.equal(await stakingToken.getAddress());
+  });
+
+  it("Should provide comprehensive protocol statistics", async function () {
+    // Stake in multiple pools
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    await stakingFixed.connect(user2).stake(1, ethers.parseEther("200"));
+    await stakingFixed.connect(user3).stake(0, ethers.parseEther("150"));
+    
+    const protocolStats = await stakingFixed.getProtocolStats();
+    
+    expect(protocolStats.totalValueLocked).to.equal(ethers.parseEther("450"));
+    expect(protocolStats.protocolActiveStakers).to.equal(3);
+    expect(protocolStats.totalPools).to.equal(2);
+    expect(protocolStats.activePools).to.equal(2);
+    
+    // Deactivate one pool
+    await stakingFixed.setPoolStatus(1, false);
+    
+    const updatedStats = await stakingFixed.getProtocolStats();
+    expect(updatedStats.activePools).to.equal(1);
+  });
+
+  it("Should provide comprehensive user statistics", async function () {
+    // User1 stakes in multiple pools
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    await stakingFixed.connect(user1).stake(1, ethers.parseEther("200"));
+    
+    const userStats = await stakingFixed.getUserStats(user1.address);
+    
+    expect(userStats.totalStakedByUser).to.equal(ethers.parseEther("300"));
+    expect(userStats.activePoolsCount).to.equal(2);
+    expect(userStats.totalPendingRewards).to.equal(0); // No rewards yet (before lockup)
+    expect(userStats.isActive).to.be.true;
+    
+    // Check user with no stakes
+    const emptyUserStats = await stakingFixed.getUserStats(user3.address);
+    expect(emptyUserStats.totalStakedByUser).to.equal(0);
+    expect(emptyUserStats.activePoolsCount).to.equal(0);
+    expect(emptyUserStats.isActive).to.be.false;
+  });
+
+  it("Should handle statistics correctly with emergency withdrawals", async function () {
+    // Setup
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    await stakingFixed.connect(user2).stake(0, ethers.parseEther("200"));
+    
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(2);
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(2);
+    
+    // Emergency withdraw
+    await stakingFixed.connect(user1).emergencyWithdraw(0);
+    
+    // Statistics should be updated
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("200"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(1);
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(1);
+  });
+
+  it("Should handle statistics correctly with early unstake", async function () {
+    // Setup
+    await stakingFixed.connect(user1).stake(0, ethers.parseEther("100"));
+    await stakingFixed.connect(user2).stake(0, ethers.parseEther("200"));
+    
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(2);
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(2);
+    
+    // Request early unstake (before lockup period)
+    await stakingFixed.connect(user1).requestEarlyUnstake(0);
+    
+    // Statistics should be updated immediately
+    expect(await stakingFixed.getTotalValueLocked()).to.equal(ethers.parseEther("200"));
+    expect(await stakingFixed.getTotalActiveStakers()).to.equal(1);
+    expect(await stakingFixed.getPoolActiveStakers(0)).to.equal(1);
+  });
 }); 
