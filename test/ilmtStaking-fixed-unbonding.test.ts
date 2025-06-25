@@ -11,7 +11,7 @@ describe("ilmtStakingFixed - Unbonding Period Tests", function () {
   let user2: any;
 
   const STAKE_AMOUNT = ethers.parseEther("1000");
-  const REWARD_RATE = 10; // 10%
+  const REWARD_RATE = 1000; // 10% in basis points (1000 bp = 10%)
   const LOCKUP_PERIOD = 30 * 24 * 60 * 60; // 30 days
   const UNBONDING_PERIOD = 7 * 24 * 60 * 60; // 7 days
   const MAX_STAKING_AMOUNT = ethers.parseEther("10000");

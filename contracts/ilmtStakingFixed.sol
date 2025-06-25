@@ -15,17 +15,24 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
     uint256 public totalStaked;
     uint256 public unbondingPeriod; // Waiting period for early unstake (in seconds)
     uint256 public totalActiveStakers; // Total number of active stakers across all pools
+    uint256 public emergencyPenaltyRate; // Emergency withdraw penalty in basis points (default: 1000 = 10%)
+    
+    // Constants
+    uint256 public constant BASIS_POINTS = 10000; // 100% = 10,000 basis points
+    uint256 public constant MAX_EMERGENCY_PENALTY = 1000; // Maximum 10% emergency penalty
+    uint256 public constant MIN_STAKE_AMOUNT = 1e18; // Minimum 1 token to stake
 
     struct Stake {
         uint256 amount;
         uint256 since;
         uint256 lastClaimedTimestamp;
+        bool rewardsActive; // Track if rewards are still active for this stake
     }
 
     struct Pool {
         address rewardToken;
         uint256 totalStaked;
-        uint256 rewardRate; // Percentage per lockup period (e.g., 10 = 10%)
+        uint256 rewardRate; // Reward rate in basis points per lockup period (e.g., 1000 = 10%, 250 = 2.5%)
         uint256 lockupPeriod;
         uint256 maxStakingAmount;
         bool isActive;
@@ -69,11 +76,13 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
     event EarlyUnstakeRequested(address indexed user, uint256 indexed poolId, uint256 amount, uint256 availableAt);
     event UnbondingClaimed(address indexed user, uint256 indexed poolId, uint256 amount);
     event UnbondingPeriodUpdated(uint256 newPeriod);
+    event EmergencyPenaltyUpdated(uint256 newPenaltyRate);
 
     constructor(address _stakingToken) {
         require(_stakingToken != address(0), "Invalid token address");
         stakingToken = IERC20(_stakingToken);
         unbondingPeriod = 7 days; // Default 7 days unbonding period
+        emergencyPenaltyRate = 1000; // Default 10% emergency penalty
     }
 
     // ============ User Functions ============
@@ -84,7 +93,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
     ) external nonReentrant whenNotPaused {
         require(poolId < pools.length, "Invalid pool ID");
         require(pools[poolId].isActive, "Pool is not active");
-        require(amount > 0, "Amount must be greater than 0");
+        require(amount >= MIN_STAKE_AMOUNT, "Amount below minimum stake");
         
         Stake storage userStake = stakes[msg.sender][poolId];
         require(
@@ -113,6 +122,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         if (userStake.amount == 0) {
             userStake.since = block.timestamp;
             userStake.lastClaimedTimestamp = block.timestamp;
+            userStake.rewardsActive = true;
             pools[poolId].activeStakers++;
             userActivePoolsCount[msg.sender]++;
             isNewPoolStaker = true;
@@ -142,6 +152,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         userStake.amount = 0;
         userStake.since = 0;
         userStake.lastClaimedTimestamp = 0;
+        userStake.rewardsActive = false;
         pools[poolId].totalStaked -= stakedAmount;
         totalStaked -= stakedAmount;
         
@@ -182,8 +193,9 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         uint256 reward = _calculatePendingReward(msg.sender, poolId);
         require(reward > 0, "No rewards to claim");
 
-        // Update last claimed timestamp
+        // Update last claimed timestamp and STOP future rewards
         userStake.lastClaimedTimestamp = block.timestamp;
+        userStake.rewardsActive = false; // Stop rewards after claiming - must restake to reactivate
 
         // Transfer rewards
         require(
@@ -205,6 +217,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         userStake.amount = 0;
         userStake.since = 0;
         userStake.lastClaimedTimestamp = 0;
+        userStake.rewardsActive = false;
         pools[poolId].totalStaked -= stakedAmount;
         totalStaked -= stakedAmount;
         
@@ -218,13 +231,19 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
             totalActiveStakers--;
         }
 
-        // Transfer tokens (no rewards in emergency withdraw)
+        // Calculate emergency penalty
+        uint256 penalty = (stakedAmount * emergencyPenaltyRate) / BASIS_POINTS;
+        uint256 withdrawAmount = stakedAmount - penalty;
+
+        // Transfer tokens (minus penalty, no rewards)
         require(
-            stakingToken.transfer(msg.sender, stakedAmount),
+            stakingToken.transfer(msg.sender, withdrawAmount),
             "Transfer failed"
         );
+        
+        // Penalty stays in contract for treasury
 
-        emit EmergencyWithdraw(msg.sender, poolId, stakedAmount);
+        emit EmergencyWithdraw(msg.sender, poolId, withdrawAmount);
     }
 
     function restake(uint256 poolId, bool includeRewards) external nonReentrant {
@@ -274,6 +293,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         userStake.amount = totalRestakeAmount;
         userStake.since = block.timestamp;
         userStake.lastClaimedTimestamp = block.timestamp;
+        userStake.rewardsActive = true; // Reactivate rewards when restaking
         
         // Update pool totals (remove old amount, add new amount)
         pools[poolId].totalStaked = pools[poolId].totalStaked - currentStakedAmount + totalRestakeAmount;
@@ -303,6 +323,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         userStake.amount = 0;
         userStake.since = 0;
         userStake.lastClaimedTimestamp = 0;
+        userStake.rewardsActive = false;
         pools[poolId].totalStaked -= stakedAmount;
         totalStaked -= stakedAmount;
         
@@ -362,6 +383,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 since,
         uint256 lastClaimedTimestamp,
+        bool rewardsActive, // New field to track if rewards are still active
         uint256 pendingReward
     ) {
         Stake memory userStake = stakes[user][poolId];
@@ -369,6 +391,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
             userStake.amount,
             userStake.since,
             userStake.lastClaimedTimestamp,
+            userStake.rewardsActive,
             _calculatePendingReward(user, poolId)
         );
     }
@@ -554,7 +577,7 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         uint256 maxStakingAmount
     ) external onlyOwner {
         require(rewardToken != address(0), "Invalid reward token");
-        require(rewardRate > 0 && rewardRate <= 100, "Invalid reward rate");
+        require(rewardRate > 0 && rewardRate <= BASIS_POINTS, "Invalid reward rate"); // Max 100% (10,000 bp)
         require(lockupPeriod > 0, "Invalid lockup period");
         require(maxStakingAmount > 0, "Invalid max staking amount");
 
@@ -599,6 +622,12 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         emit UnbondingPeriodUpdated(_unbondingPeriod);
     }
 
+    function setEmergencyPenalty(uint256 _penaltyRate) external onlyOwner {
+        require(_penaltyRate <= MAX_EMERGENCY_PENALTY, "Penalty exceeds maximum");
+        emergencyPenaltyRate = _penaltyRate;
+        emit EmergencyPenaltyUpdated(_penaltyRate);
+    }
+
     function withdrawTokens(
         address _token,
         uint256 _amount
@@ -630,8 +659,10 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         
         Stake memory userStake = stakes[user][poolId];
         if (userStake.amount == 0) return 0;
+        if (!userStake.rewardsActive) return 0; // No rewards if rewards are deactivated
 
         Pool memory pool = pools[poolId];
+        if (!pool.isActive) return 0; // No rewards if pool is deactivated
         
         // Calculate time eligible for rewards
         uint256 timeStaked = block.timestamp - userStake.since;
@@ -640,10 +671,13 @@ contract ilmtStakingFixed is Ownable, Pausable, ReentrancyGuard {
         // Calculate time since last claim
         uint256 timeSinceLastClaim = block.timestamp - userStake.lastClaimedTimestamp;
         
-        // Calculate reward based on time since last claim
-        // Reward = (amount * rewardRate * timeSinceLastClaim) / (lockupPeriod * 100)
-        // This ensures rewards are proportional to time held after lockup
-        return (userStake.amount * pool.rewardRate * timeSinceLastClaim) / 
-               (pool.lockupPeriod * 100);
+        // Cap reward time to exactly one lockup period
+        // This ensures users get exactly the promised reward rate, no more
+        uint256 rewardTime = timeSinceLastClaim > pool.lockupPeriod ? pool.lockupPeriod : timeSinceLastClaim;
+        
+        // Calculate reward based on capped time
+        // Reward = (amount * rewardRate * rewardTime) / (lockupPeriod * BASIS_POINTS)
+        return (userStake.amount * pool.rewardRate * rewardTime) / 
+               (pool.lockupPeriod * BASIS_POINTS);
     }
 } 
