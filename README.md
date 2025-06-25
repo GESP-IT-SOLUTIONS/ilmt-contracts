@@ -118,7 +118,9 @@ ilmt-contracts/
 
 ### **Rate Limiting**
 
-- **Daily Reward Rate**: Maximum 10% daily (1000 basis points)
+- **Reward Rates**: Using industry-standard basis points (10,000 bp = 100%)
+- **Maximum Reward Rate**: 100% per lockup period (10,000 basis points)
+- **Example Rates**: 1000 bp = 10%, 250 bp = 2.5%, 75 bp = 0.75%
 - **Maximum Staking**: Per-pool and per-user limits
 - **Cooldown Periods**: Configurable unstaking delays
 
@@ -199,10 +201,11 @@ npx hardhat test test/ilmtStaking-flexible-daily.test.ts
 ### **Creating a Pool (Owner Only)**
 
 ```javascript
-// 19% APY pool with 1M ILMT cap
+// 10% APY pool with 1M ILMT cap (Fixed Staking)
 await stakingContract.addPool(
   "0x1234...5678", // ILMT token address
-  5, // 5 basis points = 0.05% daily ≈ 19% APY
+  1000, // 1000 basis points = 10% per lockup period
+  30 * 24 * 60 * 60, // 30 days lockup period
   ethers.parseEther("1000000") // 1M ILMT max per user
 );
 ```
@@ -260,7 +263,8 @@ await stakingContract.claimUnstake(0);
 #### **🎯 Main Pool (Balanced)**
 
 ```
-Daily Rate: 5 (≈19% APY)
+Reward Rate: 1000 basis points (10% per lockup)
+Lockup Period: 30 days
 Max Stake: 1,000,000 ILMT
 Target: General users
 ```
@@ -268,28 +272,31 @@ Target: General users
 #### **🚀 VIP Pool (High Rewards)**
 
 ```
-Daily Rate: 14 (≈56% APY)
+Reward Rate: 1500 basis points (15% per lockup)
+Lockup Period: 60 days
 Max Stake: 100,000 ILMT
 Target: Premium users
 ```
 
-#### **💎 Whale Pool (High Capacity)**
+#### **💎 Whale Pool (Conservative)**
 
 ```
-Daily Rate: 3 (≈11% APY)
+Reward Rate: 750 basis points (7.5% per lockup)
+Lockup Period: 90 days
 Max Stake: 10,000,000 ILMT
 Target: Large holders
 ```
 
-### **APY Calculation Reference**
+### **Reward Rate Reference (Fixed Staking)**
 
 ```
-Daily Rate (basis points) → Approximate APY
-────────────────────────────────────────────
-1  → 3.7%      5  → 19.0%     10 → 38.4%
-2  → 7.4%      6  → 22.9%     15 → 59.0%
-3  → 11.2%     7  → 26.9%     20 → 80.8%
-4  → 15.1%     8  → 30.9%     25 → 103.8%
+Basis Points → Percentage per Lockup Period
+──────────────────────────────────────────────
+250  → 2.5%     1000 → 10%      2500 → 25%
+500  → 5%       1250 → 12.5%    5000 → 50%
+750  → 7.5%     1500 → 15%      10000 → 100% (MAX)
+
+Example: 1000 basis points = 10% reward per 30-day lockup
 ```
 
 ## 🔍 Security Audit

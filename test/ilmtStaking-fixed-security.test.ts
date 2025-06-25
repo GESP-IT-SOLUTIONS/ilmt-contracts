@@ -11,7 +11,7 @@ describe("ilmtStakingFixed - Security Features Tests", function () {
   let user2: any;
 
   const STAKE_AMOUNT = ethers.parseEther("1000");
-  const REWARD_RATE = 10; // 10%
+  const REWARD_RATE = 1000; // 10% in basis points (1000 bp = 10%)
   const LOCKUP_PERIOD = 7 * 24 * 60 * 60; // 7 days
   const MAX_STAKING_AMOUNT = ethers.parseEther("10000");
 
@@ -62,7 +62,7 @@ describe("ilmtStakingFixed - Security Features Tests", function () {
       expect(balanceAfter - balanceBefore).to.equal(STAKE_AMOUNT);
     });
 
-    it("Should have time-based reward calculation (not exploitable)", async function () {
+    it("Should cap rewards at one lockup period (not exploitable)", async function () {
       await stakingFixed.connect(user1).stake(0, STAKE_AMOUNT);
       
       // Wait for lockup period
@@ -75,9 +75,13 @@ describe("ilmtStakingFixed - Security Features Tests", function () {
       
       const secondReward = await stakingFixed.getPendingReward(user1.address, 0);
       
-      // Rewards should be time-based, not infinite
-      expect(secondReward).to.be.greaterThan(initialReward);
-      expect(secondReward).to.be.lessThan(initialReward * 3n); // Not unlimited growth
+      // Rewards should be capped at exactly one lockup period
+      // No infinite growth - rewards stop after one period
+      expect(secondReward).to.equal(initialReward); // Same reward, not growing
+      
+      // Should be exactly 10% of staked amount (1000 bp)
+      const expectedReward = (STAKE_AMOUNT * BigInt(REWARD_RATE)) / 10000n;
+      expect(secondReward).to.equal(expectedReward);
     });
 
     it("Should preserve timestamps on additional stakes", async function () {
@@ -102,7 +106,7 @@ describe("ilmtStakingFixed - Security Features Tests", function () {
       ).to.be.revertedWith("Invalid reward rate");
       
       await expect(
-        stakingFixed.addPool(await rewardToken.getAddress(), 101, LOCKUP_PERIOD, MAX_STAKING_AMOUNT)
+        stakingFixed.addPool(await rewardToken.getAddress(), 10001, LOCKUP_PERIOD, MAX_STAKING_AMOUNT)
       ).to.be.revertedWith("Invalid reward rate");
       
       // Should reject invalid lockup period
@@ -114,12 +118,14 @@ describe("ilmtStakingFixed - Security Features Tests", function () {
     it("Should provide emergency withdrawal functionality", async function () {
       await stakingFixed.connect(user1).stake(0, STAKE_AMOUNT);
       
-      // Emergency withdraw should work even before lockup
+      // Emergency withdraw should work even before lockup but with penalty
       const balanceBefore = await stakingToken.balanceOf(user1.address);
       await stakingFixed.connect(user1).emergencyWithdraw(0);
       const balanceAfter = await stakingToken.balanceOf(user1.address);
       
-      expect(balanceAfter - balanceBefore).to.equal(STAKE_AMOUNT);
+      // Should receive 90% after 10% penalty
+      const expectedAmount = STAKE_AMOUNT * 9n / 10n;
+      expect(balanceAfter - balanceBefore).to.equal(expectedAmount);
       
       // Stake should be cleared
       const stakeInfo = await stakingFixed.getStakeInfo(user1.address, 0);
