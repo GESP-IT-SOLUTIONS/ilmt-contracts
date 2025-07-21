@@ -1,5 +1,20 @@
 {
   "name": "hardhat-project",
+  "scripts": {
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "test": "hardhat test",
+    "test:all": "hardhat test",
+    "test:vesting": "hardhat test test/ilmtVesting*.test.ts",
+    "test:staking": "hardhat test test/ilmtStaking*.test.ts",
+    "test:security": "hardhat test test/*security*.test.ts",
+    "test:vesting-basic": "hardhat test test/ilmtVesting.test.ts",
+    "test:vesting-security": "hardhat test test/ilmtVesting-security-audit.test.ts",
+    "test:staking-fixed": "hardhat test test/ilmtStaking-fixed*.test.ts",
+    "test:staking-flexible": "hardhat test test/ilmtStaking-flexible*.test.ts",
+    "clean": "hardhat clean",
+    "coverage": "hardhat coverage"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "dotenv": "^16.4.5",
@@ -7,6 +22,7 @@
   },
   "dependencies": {
     "@chainlink/contracts-ccip": "^1.4.0",
-    "@openzeppelin/contracts": "^4.9.3"
+    "@openzeppelin/contracts": "^4.9.3",
+    "csv-parser": "^3.2.0"
   }
 }
