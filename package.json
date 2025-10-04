@@ -16,9 +16,6 @@
     "test:dapp": "echo 'See examples/dapp-vesting-integration.js for dApp integration example'",
     "test:airdrop": "hardhat test test/airdrop-scenario.test.ts",
     "test:retroactive": "hardhat test test/retroactive-vesting.test.ts",
-    "deploy:retroactive": "npx hardhat run scripts/deploy-retroactive-vesting.ts",
-    "deploy:retroactive:testnet": "npx hardhat run scripts/deploy-retroactive-vesting.ts --network tbsc",
-    "deploy:retroactive:mainnet": "npx hardhat run scripts/deploy-retroactive-vesting.ts --network bnb",
     "test:deployment": "hardhat test test/deployment-script.test.ts",
     "test:scenario": "hardhat test test/detailed-scenario-verification.test.ts",
     "test:complete": "hardhat test test/deployment-script.test.ts test/detailed-scenario-verification.test.ts test/ilmtVesting*.test.ts",
@@ -27,7 +24,12 @@
     "fund:vesting:testnet": "npx hardhat run scripts/check-and-fund-vesting.ts --network tbsc",
     "fund:vesting:mainnet": "npx hardhat run scripts/check-and-fund-vesting.ts --network bnb",
     "clean": "hardhat clean",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "calculate-vesting": "npx ts-node scripts/calculate-vesting-schedules.ts",
+    "show-token-requirements": "npx ts-node scripts/show-token-requirements.ts",
+    "create-vesting-schedules": "npx hardhat run scripts/create-vesting-schedules-only.ts",
+    "create-vesting-schedules:dry": "DRY_RUN=true npx hardhat run scripts/create-vesting-schedules-only.ts",
+    "test:vesting-distribution": "hardhat test test/vesting-distribution-validation.test.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

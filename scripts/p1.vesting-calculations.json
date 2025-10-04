@@ -1,0 +1,62 @@
+[
+  {
+    "address": "0xa0dF064E285b641AeAC3964691b09fD0fae1148d",
+    "totalAllocation": 30303.0303,
+    "alreadyDistributed": 4545,
+    "remainingToDistribute": 25758.0303,
+    "firstSchedule": {
+      "amount": 3030,
+      "description": "10% cu cliff de 1 oră, claimable o singură dată",
+      "cliff": 1,
+      "claimableOnce": true
+    },
+    "secondSchedule": {
+      "amount": 22728.0303,
+      "description": "75% restant pe 365 de zile cu distribuție zilnică",
+      "daysStartedAgo": 22,
+      "totalDuration": 365,
+      "dailyAmount": 62.26857616438356,
+      "immediatelyClaimable": 1369
+    }
+  },
+  {
+    "address": "0x9f856861D3174871090A07505c124Fc0b20554BD",
+    "totalAllocation": 1530.30303,
+    "alreadyDistributed": 229,
+    "remainingToDistribute": 1301.30303,
+    "firstSchedule": {
+      "amount": 153,
+      "description": "10% cu cliff de 1 oră, claimable o singură dată",
+      "cliff": 1,
+      "claimableOnce": true
+    },
+    "secondSchedule": {
+      "amount": 1148.30303,
+      "description": "75% restant pe 365 de zile cu distribuție zilnică",
+      "daysStartedAgo": 22,
+      "totalDuration": 365,
+      "dailyAmount": 3.146035698630137,
+      "immediatelyClaimable": 69
+    }
+  },
+  {
+    "address": "0x79B226b2537825a74316B27220BB1E177198A376",
+    "totalAllocation": 6181.818181,
+    "alreadyDistributed": 927,
+    "remainingToDistribute": 5254.818181,
+    "firstSchedule": {
+      "amount": 618,
+      "description": "10% cu cliff de 1 oră, claimable o singură dată",
+      "cliff": 1,
+      "claimableOnce": true
+    },
+    "secondSchedule": {
+      "amount": 4636.818181,
+      "description": "75% restant pe 365 de zile cu distribuție zilnică",
+      "daysStartedAgo": 22,
+      "totalDuration": 365,
+      "dailyAmount": 12.703611454794519,
+      "immediatelyClaimable": 279
+    }
+  }
+]

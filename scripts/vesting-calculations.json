@@ -1,0 +1,22 @@
+[
+  {
+    "address": "0x88A5D636CDcf2587b4C7A6bBD994bFfa96cE4788",
+    "totalAllocation": 100000,
+    "alreadyDistributed": 15000,
+    "remainingToDistribute": 85000,
+    "firstSchedule": {
+      "amount": 10000,
+      "description": "10% cu cliff de 1 oră, claimable o singură dată",
+      "cliff": 1,
+      "claimableOnce": true
+    },
+    "secondSchedule": {
+      "amount": 75000,
+      "description": "75% restant pe 365 de zile cu distribuție zilnică",
+      "daysStartedAgo": 22,
+      "totalDuration": 365,
+      "dailyAmount": 205.4794520547945,
+      "immediatelyClaimable": 4520
+    }
+  }
+]
